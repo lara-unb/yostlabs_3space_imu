@@ -1,0 +1,13 @@
+<launch>
+  <group ns="ema_trike">
+  <rosparam command="load" file="$(find ema_trike)/config/imu.yaml" ns="imu" />
+
+  <node name="imu" pkg="ema_trike" type="imu_node.py" output="screen" />
+
+  </group>
+
+  <!-- launch utils -->
+  <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find ema_trike)/config/rviz/imu.rviz" output="log" respawn="true" respawn_delay="5"/>
+  <node name="rqt_graph" pkg="rqt_graph" type="rqt_graph" output="log" respawn="true" respawn_delay="5"/>
+  <node name="rqt_plot" pkg="rqt_plot" type="rqt_plot" output="log" respawn="true" respawn_delay="5"/> -->
+</launch>
