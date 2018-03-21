@@ -37,6 +37,8 @@ class IMU:
                     self.devices[name] = ts_api.TSWLSensor(logical_id=wireless_id, dongle=self.devices[wireless_dng])
                     self.wireless_imus.append(name)
 
+                    print self.devices[name]
+
         if config_dict['autocalibrate'] == True:
             self.autocalibrate()
             
