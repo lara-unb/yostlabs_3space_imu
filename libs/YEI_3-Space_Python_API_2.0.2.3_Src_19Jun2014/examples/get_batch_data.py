@@ -43,9 +43,7 @@ if device is not None:
     print(device)
     ## Set the stream slots for getting the tared orientation of the device as a
     ## quaternion, the raw component data, and the button state
-    device.setStreamingSlots(   slot0='getTaredOrientationAsQuaternion',
-                                slot1='getAllRawComponentSensorData',
-                                slot2='getButtonState')
+    device.setStreamingSlots(   slot0='getTaredOrientationAsQuaternion')
     
     ## Now we can start getting the streaming batch data from the device.
     print("==================================================")

@@ -52,7 +52,7 @@ streaming_delay: 0
 streaming_slots: {'pedal': ['getTaredOrientationAsQuaternion', 'getNormalizedGyroRate', 'getButtonState']}
 wired_port: {'pc': '/dev/ttyACM0'}
 wireless_dng: {'pedal': 'pc'}
-wireless_id: {'pedal': 3}
+wireless_id: {'pedal': 7}
 
 ## 2 Wireless streaming test ##
 # dev_names: ['pc', 'pedal', 'remote']
