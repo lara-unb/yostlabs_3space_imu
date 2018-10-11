@@ -15,6 +15,7 @@ class IMU:
         self.wired_imus = []
         self.wireless_imus = []
         self.sensor_list = []
+        self.serialport = serial.Serial()
 
         for name in config_dict['dev_names']:
             dev_type = config_dict['dev_type'][name]
@@ -22,12 +23,10 @@ class IMU:
             if dev_type == 'DNG':
                 wired_port = config_dict['wired_port'][name]
 
-                ######################HeWasHere############################
-                self.devices[name] = serial.Serial(port=wired_port, baudrate=115200, timeout=0.001)
+                self.serialport = serial.Serial(port=wired_port, baudrate=115200, timeout=0.001)
                 time.sleep(0.1)
-                self.devices[name].flush()
+                self.serialport.flush()
                 time.sleep(0.1)
-                ######################HeWasHere############################
 
                 self.dongles.append(name)
 
@@ -66,10 +65,8 @@ class IMU:
                     if self.streaming_duration == 'unlimited':
                         self.streaming_duration = 0xFFFFFFFF
 
-                    ######################HeWasHere############################
                     wireless_id = config_dict['wireless_id'][name] # Logical id of WL device in associated dongle's wireless table
-                    wireless_dng = config_dict['wireless_dng'][name] # Name of dongle associated to this WL device
-                    serial_port = self.devices[wireless_dng] # Serial port of the respective dongle
+                    serial_port = self.serialport # Serial port of the respective dongle
 
                     command = 0 # ???
 
@@ -91,7 +88,6 @@ class IMU:
                         out = '>> ' + serial_port.read(serial_port.inWaiting())
 
                     print('Start')
-                    ######################HeWasHere############################
 
                     # # Set IMU streams to the appropriate timing
                     # self.devices[name].setStreamingTiming(interval=self.streaming_interval,
@@ -157,10 +153,21 @@ class IMU:
 
     def calibrate(self, name): ## G: beginGyroscopeAutoCalibration, need TSSensor (don't do for dongle)
         dev_type = self.config_dict['dev_type'][name]
+        wireless_id = self.config_dict['wireless_id'][name] # Logical id of WL device in associated dongle's wireless table
+        serial_port = self.serialport # Serial port of the respective dongle
 
         if dev_type == 'WL':
             #print 'calibrate: ', name
-            return self.devices[name].beginGyroscopeAutoCalibration()
+            msg = '>'+str(wireless_id)+',165\n'
+            print(msg)
+            serial_port.write(msg)
+            time.sleep(0.1)
+            out = ''
+            while serial_port.inWaiting():
+                out += '>> ' + serial_port.read(serial_port.inWaiting())
+            print(out)
+            out = ''
+            return 1
 
         else:
             print 'calibrate not defined for dev_type = ', dev_type
@@ -172,10 +179,21 @@ class IMU:
 
     def setEulerToYXZ(self, name): ## G: setEulerAngleDecompositionOrder with angle_order = 1, need TSSensor (don't do for dongle)
         dev_type = self.config_dict['dev_type'][name]
+        wireless_id = self.config_dict['wireless_id'][name] # Logical id of WL device in associated dongle's wireless table
+        serial_port = self.serialport # Serial port of the respective dongle
 
         if dev_type == 'WL':
             #print 'setEulerToYXZ: ', name
-            return self.devices[name].setEulerAngleDecompositionOrder(angle_order=0x01)
+            msg = '>'+str(wireless_id)+',16,5\n'
+            print(msg)
+            serial_port.write(msg)
+            time.sleep(0.1)
+            out = ''
+            while serial_port.inWaiting():
+                out += '>> ' + serial_port.read(serial_port.inWaiting())
+            print(out)
+            out = ''
+            return 1
 
         else:
             #print 'setEulerToYXZ not defined for dev_type = ', dev_type
@@ -187,10 +205,21 @@ class IMU:
 
     def tare(self, name): ## G: tareWithCurrentOrientation, need TSSensor (don't do for dongle)
         dev_type = self.config_dict['dev_type'][name]
+        wireless_id = self.config_dict['wireless_id'][name] # Logical id of WL device in associated dongle's wireless table
+        serial_port = self.serialport # Serial port of the respective dongle
 
         if dev_type == 'WL':
             #print 'tare: ', name
-            return self.devices[name].tareWithCurrentOrientation()
+            msg = '>'+str(wireless_id)+',96\n'
+            print(msg)
+            serial_port.write(msg)
+            time.sleep(0.1)
+            out = ''
+            while serial_port.inWaiting():
+                out += '>> ' + serial_port.read(serial_port.inWaiting())
+            print(out)
+            out = ''
+            return 1
 
         else:
             print 'tare not defined for dev_type = ', dev_type
