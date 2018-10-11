@@ -149,7 +149,6 @@ class IMU:
             #     # Start streaming
             #     ts_api.global_broadcaster.startStreaming(filter=self.sensor_list)
 
-
         # self.setRightHandedAxis()
 
 ########################################
