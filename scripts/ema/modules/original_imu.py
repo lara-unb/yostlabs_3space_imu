@@ -1,7 +1,4 @@
 #IMU functions
-import time
-import serial
-import binascii
 from ema.libs.yei import threespace_api as ts_api
 
 class IMU:
@@ -21,36 +18,29 @@ class IMU:
 
             if dev_type == 'DNG':
                 wired_port = config_dict['wired_port'][name]
-
-                ######################HeWasHere############################
-                self.devices[name] = serial.Serial(port=wired_port, baudrate=115200, timeout=0.001)
-                time.sleep(0.1)
-                self.devices[name].flush()
-                time.sleep(0.1)
-                ######################HeWasHere############################
-
+                self.devices[name] = ts_api.TSDongle(com_port=wired_port)
                 self.dongles.append(name)
 
             elif dev_type == 'WL' and config_dict['broadcast'] == False:
                 imu_mode = config_dict['imu_mode'][name]
                 self.imus.append(name)
 
-                # if imu_mode == 'wired':
-                #     wired_port = config_dict['wired_port'][name]
-                #     self.devices[name] = ts_api.TSWLSensor(com_port=wired_port)
-                #     self.wired_imus.append(name)
+                if imu_mode == 'wired':
+                    wired_port = config_dict['wired_port'][name]
+                    self.devices[name] = ts_api.TSWLSensor(com_port=wired_port)
+                    self.wired_imus.append(name)
 
                 if imu_mode == 'wireless':
                     wireless_dng = config_dict['wireless_dng'][name]
                     wireless_id = config_dict['wireless_id'][name]
 
-                    # self.devices[name] = ts_api.TSWLSensor(logical_id=wireless_id, dongle=self.devices[wireless_dng])
+                    self.devices[name] = ts_api.TSWLSensor(logical_id=wireless_id, dongle=self.devices[wireless_dng])
                     self.wireless_imus.append(name)
 
-                    # print self.devices[name]
+                    print self.devices[name]
 
-        # if config_dict['autocalibrate'] == True:
-        #     self.autocalibrate()
+        if config_dict['autocalibrate'] == True:
+            self.autocalibrate()
             
         if config_dict['streaming'] == True:
             self.streaming = True
@@ -65,91 +55,64 @@ class IMU:
                 for name in self.imus:
                     if self.streaming_duration == 'unlimited':
                         self.streaming_duration = 0xFFFFFFFF
-
-                    ######################HeWasHere############################
-                    wireless_id = config_dict['wireless_id'][name] # Logical id of WL device in associated dongle's wireless table
-                    wireless_dng = config_dict['wireless_dng'][name] # Name of dongle associated to this WL device
-                    serial_port = self.devices[wireless_dng] # Serial port of the respective dongle
-
-                    command = 0 # ???
-
-                    # Set streaming slots
-                    msg = '>'+str(wireless_id)+',80,'+str(command)+',255,255,255,255,255,255,255\n'
-                    print(msg)
-                    serial_port.write(msg)
-                    time.sleep(0.1)
-                    out = ''
-                    while serial_port.inWaiting():
-                        out += '>> ' + serial_port.read(serial_port.inWaiting())
-                    print(out)
-                    out = ''
-
-                    # Start streaming
-                    serial_port.write('>'+str(wireless_id)+',85\n')
-                    time.sleep(0.1)
-                    while serial_port.inWaiting():
-                        out = '>> ' + serial_port.read(serial_port.inWaiting())
-
-                    print('Start')
-                    ######################HeWasHere############################
-
-                    # # Set IMU streams to the appropriate timing
-                    # self.devices[name].setStreamingTiming(interval=self.streaming_interval,
-                    #                                       duration=self.streaming_duration,
-                    #                                       delay=self.streaming_delay)
+                        
+                    # Set IMU streams to the appropriate timing
+                    self.devices[name].setStreamingTiming(interval=self.streaming_interval,
+                                                          duration=self.streaming_duration,
+                                                          delay=self.streaming_delay)
                     
-                    # # Set IMU slots according to config file
-                    # padded_slots = list(self.streaming_slots[name])
-                    # for i in range(0,8):
-                    #     try:
-                    #         padded_slots[i]
-                    #     except IndexError:
-                    #         padded_slots.append('null')
+                    # Set IMU slots according to config file
+                    padded_slots = list(self.streaming_slots[name])
+                    for i in range(0,8):
+                        try:
+                            padded_slots[i]
+                        except IndexError:
+                            padded_slots.append('null')
                             
-                    # self.devices[name].setStreamingSlots(slot0=padded_slots[0],
-                    #                                      slot1=padded_slots[1],
-                    #                                      slot2=padded_slots[2],
-                    #                                      slot3=padded_slots[3],
-                    #                                      slot4=padded_slots[4],
-                    #                                      slot5=padded_slots[5],
-                    #                                      slot6=padded_slots[6],
-                    #                                      slot7=padded_slots[7])
+                    self.devices[name].setStreamingSlots(slot0=padded_slots[0],
+                                                         slot1=padded_slots[1],
+                                                         slot2=padded_slots[2],
+                                                         slot3=padded_slots[3],
+                                                         slot4=padded_slots[4],
+                                                         slot5=padded_slots[5],
+                                                         slot6=padded_slots[6],
+                                                         slot7=padded_slots[7])
                     
-                    # # Start streaming
-                    # # G: for some reason, startStreaming was a bad idea. without it, we get to 67Hz
-                    # #self.devices[name].startStreaming()
-            # else:
-            #     self.broadcast = True
+                    # Start streaming
+                    # G: for some reason, startStreaming was a bad idea. without it, we get to 67Hz
+                    #self.devices[name].startStreaming()
+            else:
+                self.broadcast = True
                 
-            #     for i in range(6): # Only checking the first six logical indexes
-            #         sens = self.devices['pc'][i]
-            #         if sens is not None:
-            #             name = str(i)
-            #             self.sensor_list.append(sens)
-            #             self.devices[name] = sens
-            #             self.imus.append(name)
+                for i in range(6): # Only checking the first six logical indexes
+                    sens = self.devices['pc'][i]
+                    if sens is not None:
+                        name = str(i)
+                        self.sensor_list.append(sens)
+                        self.devices[name] = sens
+                        self.imus.append(name)
                 
-            #     if self.streaming_duration == 'unlimited':
-            #         self.streaming_duration = 0xFFFFFFFF
+                if self.streaming_duration == 'unlimited':
+                    self.streaming_duration = 0xFFFFFFFF
                     
-            #     # Set IMU streams to the appropriate timing
-            #     ts_api.global_broadcaster.setStreamingTiming(interval=self.streaming_interval,
-            #                                                  duration=self.streaming_duration,
-            #                                                  delay=self.streaming_delay,
-            #                                                  delay_offset=12000,
-            #                                                  filter=self.sensor_list)
+                # Set IMU streams to the appropriate timing
+                ts_api.global_broadcaster.setStreamingTiming(interval=self.streaming_interval,
+                                                             duration=self.streaming_duration,
+                                                             delay=self.streaming_delay,
+                                                             delay_offset=12000,
+                                                             filter=self.sensor_list)
                 
-            #     # Set IMU slots to getQuaternion, getGyroData, getAccelData and getButtonState
-            #     ts_api.global_broadcaster.setStreamingSlots(slot0='getTaredOrientationAsQuaternion',
-            #                                                 slot1='getNormalizedGyroRate',
-            #                                                 slot2='getCorrectedAccelerometerVector',
-            #                                                 slot3='getButtonState',
-            #                                                 filter=self.sensor_list)
+                # Set IMU slots to getQuaternion, getGyroData, getAccelData and getButtonState
+                ts_api.global_broadcaster.setStreamingSlots(slot0='getTaredOrientationAsQuaternion',
+                                                            slot1='getNormalizedGyroRate',
+                                                            slot2='getCorrectedAccelerometerVector',
+                                                            slot3='getButtonState',
+                                                            filter=self.sensor_list)
                 
-            #     # Start streaming
-            #     ts_api.global_broadcaster.startStreaming(filter=self.sensor_list)
+                # Start streaming
+                ts_api.global_broadcaster.startStreaming(filter=self.sensor_list)
 
-        # self.setRightHandedAxis()
+        self.setRightHandedAxis()
 
 ########################################
 # Calibration
