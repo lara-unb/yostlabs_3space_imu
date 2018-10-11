@@ -17,8 +17,8 @@ def teste():
 
     number_of_sensors = 1
     p = False # print?
-
     command = 0
+
     addresses = [7,8,2,3,4,5,1]
 
     portIMU = '/dev/ttyACM0'
