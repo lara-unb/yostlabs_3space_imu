@@ -48,8 +48,8 @@ class IMU:
 
                     # print self.devices[name]
 
-        # if config_dict['autocalibrate'] == True:
-        #     self.autocalibrate()
+        if config_dict['autocalibrate'] == True:
+            self.autocalibrate()
             
         if config_dict['streaming'] == True:
             self.streaming = True
@@ -64,11 +64,26 @@ class IMU:
                 for name in self.imus:
                     if self.streaming_duration == 'unlimited':
                         self.streaming_duration = 0xFFFFFFFF
-
+                        
                     wireless_id = config_dict['wireless_id'][name] # Logical id of WL device in associated dongle's wireless table
                     serial_port = self.serialport # Serial port of the respective dongle
 
-                    command = 0 # ???
+                    # Set streaming timing
+                    msg = '>'+str(wireless_id)+',82'+str(self.streaming_interval)+\
+                            str(self.streaming_duration)+str(self.streaming_delay)+'\n'
+                    print(msg)
+                    serial_port.write(msg)
+                    time.sleep(0.1)
+                    out = ''
+                    while serial_port.inWaiting():
+                        out += '>> ' + serial_port.read(serial_port.inWaiting())
+                    print(out)
+                    out = ''
+
+                    # Since this file was adapted for a specific application, the field "streaming_slots" from the configuration 
+                    # file (imu.yalm) wont be treated here, but it should if a generalized application is desired
+
+                    command = 0 # Code for GetTaredOrientationAsQuaternion, the only slot used here
 
                     # Set streaming slots
                     msg = '>'+str(wireless_id)+',80,'+str(command)+',255,255,255,255,255,255,255\n'
@@ -88,32 +103,11 @@ class IMU:
                         out = '>> ' + serial_port.read(serial_port.inWaiting())
 
                     print('Start')
-
-                    # # Set IMU streams to the appropriate timing
-                    # self.devices[name].setStreamingTiming(interval=self.streaming_interval,
-                    #                                       duration=self.streaming_duration,
-                    #                                       delay=self.streaming_delay)
-                    
-                    # # Set IMU slots according to config file
-                    # padded_slots = list(self.streaming_slots[name])
-                    # for i in range(0,8):
-                    #     try:
-                    #         padded_slots[i]
-                    #     except IndexError:
-                    #         padded_slots.append('null')
-                            
-                    # self.devices[name].setStreamingSlots(slot0=padded_slots[0],
-                    #                                      slot1=padded_slots[1],
-                    #                                      slot2=padded_slots[2],
-                    #                                      slot3=padded_slots[3],
-                    #                                      slot4=padded_slots[4],
-                    #                                      slot5=padded_slots[5],
-                    #                                      slot6=padded_slots[6],
-                    #                                      slot7=padded_slots[7])
                     
                     # # Start streaming
                     # # G: for some reason, startStreaming was a bad idea. without it, we get to 67Hz
                     # #self.devices[name].startStreaming()
+            
             # else:
             #     self.broadcast = True
                 
@@ -261,10 +255,37 @@ class IMU:
 
     def getEulerAngles(self, name): ## G: getTaredOrientationAsEulerAngles, need TSSensor (don't do for dongle)
         dev_type = self.config_dict['dev_type'][name]
+        wireless_id = self.config_dict['wireless_id'][name] # Logical id of WL device in associated dongle's wireless table
+        serial_port = self.serialport # Serial port of the respective dongle
+        angle = []
 
         if dev_type == 'WL':
             #print 'getEulerAngles: ', name
-            return self.devices[name].getTaredOrientationAsEulerAngles()
+            msg = '>'+str(wireless_id)+',1\n'
+            print(msg)
+            serial_port.write(msg)
+            time.sleep(0.1)
+
+            out = serial_port.inWaiting()
+            if out > 0:
+                data = bytearray(serial_port.read(out))
+
+                # Each angle is a 4 byte float in the message. They are stored from byte 4 to 15. Pitch, Yaw, Roll
+                temp = ''.join(chr(i) for i in data[4:8])
+                pitch = struct.unpack('>f', temp)
+                pitch = pitch[0]
+
+                temp = ''.join(chr(i) for i in data[8:12])
+                yaw = struct.unpack('>f', temp)
+                yaw = yaw[0]
+
+                temp = ''.join(chr(i) for i in data[12:16])
+                roll = struct.unpack('>f', temp)
+                roll = roll[0]         
+
+                out = [pitch, yaw, roll]
+
+                return out
 
         else:
             print 'getEulerAngles not defined for dev_type = ', dev_type
@@ -298,22 +319,59 @@ class IMU:
 
     def getStreamingData(self, name): ## G: getStreamingBatch, need TSSensor (don't do for dongle)
         dev_type = self.config_dict['dev_type'][name]
+        wireless_id = self.config_dict['wireless_id'][name] # Logical id of WL device in associated dongle's wireless table
+        serial_port = self.serialport # Serial port of the respective dongle
 
         if dev_type == 'WL':
             #print 'getStreamingBatch: ', name
-            return self.devices[name].getStreamingBatch()
+            msg = '>'+str(wireless_id)+',0\n'
+            print(msg)
+            serial_port.write(msg)
+            time.sleep(0.1)
+
+            out = serial_port.inWaiting()
+            if out > 0:
+                data = bytearray(serial_port.read(out))
+
+                # Each quaternion is a 4 byte float in the message. They are stored from byte 4 to 19. X,Y,Z,W
+                temp = ''.join(chr(i) for i in data[4:8])
+                x = struct.unpack('>f', temp)
+                x = x[0]
+
+                temp = ''.join(chr(i) for i in data[8:12])
+                y = struct.unpack('>f', temp)
+                y = y[0]
+
+                temp = ''.join(chr(i) for i in data[12:16])
+                z = struct.unpack('>f', temp)
+                z = z[0]         
+
+                temp = ''.join(chr(i) for i in data[16:20])
+                w = struct.unpack('>f', temp)
+                w = w[0]         
+
+                out = [x,y,z,w]
+
+                return out
 
         else:
             print 'getStreamingBatch not defined for dev_type = ', dev_type
             return 0
     
     def shutdown(self):
+        wireless_id = self.config_dict['wireless_id'][self.imus[0]] # Logical id of WL device in associated dongle's wireless table
+        serial_port = self.serialport # Serial port of the respective dongle
+
         if self.streaming == True:
             for name in self.imus:
                 print 'shutting down'
             
                 # Stop streaming
-                self.devices[name].stopStreaming()
+                msg = '>'+str(wireless_id)+',86\n'
+                print(msg)
+                serial_port.write(msg)
+                time.sleep(0.1)
+                
 
     def autocalibrate(self):
         for name in self.imus:
