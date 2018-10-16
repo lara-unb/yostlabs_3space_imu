@@ -1,6 +1,7 @@
 #IMU functions
 import time
 import serial
+import struct
 import binascii
 from ema.libs.yei import threespace_api as ts_api
 
@@ -324,10 +325,6 @@ class IMU:
 
         if dev_type == 'WL':
             #print 'getStreamingBatch: ', name
-            msg = '>'+str(wireless_id)+',0\n'
-            print(msg)
-            serial_port.write(msg)
-            time.sleep(0.1)
 
             out = serial_port.inWaiting()
             if out > 0:
@@ -371,6 +368,8 @@ class IMU:
                 print(msg)
                 serial_port.write(msg)
                 time.sleep(0.1)
+
+                serial_port.close()
                 
 
     def autocalibrate(self):
