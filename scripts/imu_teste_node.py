@@ -19,7 +19,7 @@ def teste():
     p = False # print?
     command = 0
 
-    addresses = [7,8,2,3,4,5,1]
+    addresses = [7,8,2,3,4,5,1,6]
 
     portIMU = '/dev/ttyACM0'
     serial_port = serial.Serial(port=portIMU, baudrate=115200, timeout=0.001)

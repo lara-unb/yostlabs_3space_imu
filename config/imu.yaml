@@ -17,18 +17,18 @@
 autocalibrate: true
 
 ## LUCAS TEST - 1 Wireless streaming test ##
-dev_names: ['pc', 'pedal']
-dev_type: {'pc': 'DNG', 'pedal': 'WL'}
-imu_mode: {'pedal': 'wireless'}
+dev_names: ['pc', 'pedal', 'nova']
+dev_type: {'pc': 'DNG', 'pedal': 'WL', 'nova' : 'WL'}
+imu_mode: {'pedal': 'wireless', 'nova' : 'wireless'}
 broadcast: false
 streaming: true
 streaming_interval: 0
 streaming_duration: 'unlimited'
 streaming_delay: 0
-streaming_slots: {'pedal': ['getTaredOrientationAsQuaternion']}
+streaming_slots: {'pedal': ['getTaredOrientationAsQuaternion'], 'nova' : ['getTaredOrientationAsQuaternion']}
 wired_port: {'pc': '/dev/ttyACM0'}
-wireless_dng: {'pedal': 'pc'}
-wireless_id: {'pedal': 7}
+wireless_dng: {'pedal': 'pc', 'nova' : 'pc'}
+wireless_id: {'pedal': 1, 'nova' : 7}
 
 ## 1 Wired streaming test ##
 # dev_names: ['pedal']

@@ -4,6 +4,7 @@ import rospy
 
 # import ros msgs
 import ema.modules.imu as imu
+from std_msgs.msg import String
 from sensor_msgs.msg import Imu
 from std_msgs.msg import Int8
 
@@ -17,7 +18,8 @@ def main():
     # list published topics
     pub = {}
     for name in imu_manager.imus:
-        pub[name] = rospy.Publisher('imu/' + name, Imu, queue_size=10)
+        pub[name] = rospy.Publisher('imu/' + name, String, queue_size=10)
+        # pub[name] = rospy.Publisher('imu/' + name, Imu, queue_size=10)
         pub[name + '_buttons'] = rospy.Publisher('imu/' + name + '_buttons', Int8, queue_size=10)
 
     # define loop rate (in hz)
@@ -66,9 +68,9 @@ def main():
             if imu_manager.broadcast == False:
                 for name in imu_manager.imus:
                     ## one message per imu
-                    imuMsg = Imu()
-                    imuMsg.header.stamp = timestamp
-                    imuMsg.header.frame_id = frame_id
+                    #imuMsg = Imu()
+                    #imuMsg.header.stamp = timestamp
+                    #imuMsg.header.frame_id = frame_id
                     buttons = Int8()
                     
                     streaming_data = imu_manager.getStreamingData(name)
@@ -78,41 +80,42 @@ def main():
                         #print name, slot
                         
                         if slot == 'getTaredOrientationAsQuaternion':
-                                                        
-                            imuMsg.orientation.x = streaming_data[idx]
-                            imuMsg.orientation.y = streaming_data[idx+1]
-                            imuMsg.orientation.z = streaming_data[idx+2]
-                            imuMsg.orientation.w = streaming_data[idx+3]
+                            
+                            imuMsg = str(streaming_data[idx])                         
+                            #imuMsg.orientation.x = streaming_data[idx]
+                            #imuMsg.orientation.y = streaming_data[idx+1]
+                            #imuMsg.orientation.z = streaming_data[idx+2]
+                            #imuMsg.orientation.w = streaming_data[idx+3]
                             
                             idx = idx + 4
                             
-                        elif slot == 'getNormalizedGyroRate':
+                        # elif slot == 'getNormalizedGyroRate':
                     
-                            imuMsg.angular_velocity.x = streaming_data[idx]
-                            imuMsg.angular_velocity.y = streaming_data[idx+1]
-                            imuMsg.angular_velocity.z = streaming_data[idx+2]
+                        #     imuMsg.angular_velocity.x = streaming_data[idx]
+                        #     imuMsg.angular_velocity.y = streaming_data[idx+1]
+                        #     imuMsg.angular_velocity.z = streaming_data[idx+2]
                             
-                            idx = idx + 3
+                        #     idx = idx + 3
                             
-                        elif slot == 'getCorrectedAccelerometerVector':
+                        # elif slot == 'getCorrectedAccelerometerVector':
                             
-                            imuMsg.linear_acceleration.x = -streaming_data[idx]
-                            imuMsg.linear_acceleration.y = -streaming_data[idx+1]
-                            imuMsg.linear_acceleration.z = -streaming_data[idx+2]
+                        #     imuMsg.linear_acceleration.x = -streaming_data[idx]
+                        #     imuMsg.linear_acceleration.y = -streaming_data[idx+1]
+                        #     imuMsg.linear_acceleration.z = -streaming_data[idx+2]
                             
-                            idx = idx + 3
+                        #     idx = idx + 3
                             
-                            print type(streaming_data)
+                        #     print type(streaming_data)
                             
-                        elif slot == 'getButtonState':
+                        # elif slot == 'getButtonState':
 
-                            if type(streaming_data) == 'tuple':
-                                buttons = streaming_data[idx]
+                        #     if type(streaming_data) == 'tuple':
+                        #         buttons = streaming_data[idx]
                             
-                                idx = idx + 1
-                            else:
-                                # imu is only streaming button state, result is not a tuple
-                                buttons = streaming_data
+                        #         idx = idx + 1
+                        #     else:
+                        #         # imu is only streaming button state, result is not a tuple
+                        #         buttons = streaming_data
 
                     # publish streamed data
                     pub[name].publish(imuMsg)
