@@ -18,9 +18,9 @@ def main():
     # list published topics
     pub = {}
     for name in imu_manager.imus:
-        pub[name] = rospy.Publisher('imu/' + name, String, queue_size=10)
-        # pub[name] = rospy.Publisher('imu/' + name, Imu, queue_size=10)
-        pub[name + '_buttons'] = rospy.Publisher('imu/' + name + '_buttons', Int8, queue_size=10)
+        # pub[name] = rospy.Publisher('imu/' + name, String, queue_size=10)
+        pub[name] = rospy.Publisher('imu/' + name, Imu, queue_size=10)
+        # pub[name + '_buttons'] = rospy.Publisher('imu/' + name + '_buttons', Int8, queue_size=10)
 
     # define loop rate (in hz)
     rate = rospy.Rate(200)
@@ -67,11 +67,11 @@ def main():
             # else:
             if imu_manager.broadcast == False:
                 for name in imu_manager.imus:
-                    ## one message per imu
-                    #imuMsg = Imu()
-                    #imuMsg.header.stamp = timestamp
-                    #imuMsg.header.frame_id = frame_id
-                    buttons = Int8()
+                    # one message per imu
+                    imuMsg = Imu()
+                    imuMsg.header.stamp = timestamp
+                    imuMsg.header.frame_id = frame_id
+                    # buttons = Int8()
                     
                     streaming_data = imu_manager.getStreamingData(name)
                     idx = 0
@@ -82,10 +82,10 @@ def main():
                         if slot == 'getTaredOrientationAsQuaternion':
                             
                             imuMsg = str(streaming_data[idx])                         
-                            #imuMsg.orientation.x = streaming_data[idx]
-                            #imuMsg.orientation.y = streaming_data[idx+1]
-                            #imuMsg.orientation.z = streaming_data[idx+2]
-                            #imuMsg.orientation.w = streaming_data[idx+3]
+                            imuMsg.orientation.x = streaming_data[idx]
+                            imuMsg.orientation.y = streaming_data[idx+1]
+                            imuMsg.orientation.z = streaming_data[idx+2]
+                            imuMsg.orientation.w = streaming_data[idx+3]
                             
                             idx = idx + 4
                             
@@ -119,7 +119,7 @@ def main():
 
                     # publish streamed data
                     pub[name].publish(imuMsg)
-                    pub[name + '_buttons'].publish(buttons)
+                    # pub[name + '_buttons'].publish(buttons)
                 # else:
                 #     for name in imu_manager.imus:
                 #         ## one message per imu
