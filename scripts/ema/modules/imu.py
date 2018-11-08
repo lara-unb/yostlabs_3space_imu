@@ -1,5 +1,6 @@
 #IMU functions
 import time
+import numpy
 import serial
 import struct
 import binascii
@@ -68,6 +69,17 @@ class IMU:
                         
                     wireless_id = config_dict['wireless_id'][name] # Logical id of WL device in associated dongle's wireless table
                     serial_port = self.serialport # Serial port of the respective dongle
+
+                    # Set compass enable
+                    msg = '>'+str(wireless_id)+',109,0'+'\n'
+                    print(msg)
+                    serial_port.write(msg)
+                    time.sleep(0.1)
+                    out = ''
+                    while serial_port.inWaiting():
+                        out += '>> ' + serial_port.read(serial_port.inWaiting())
+                    print(out)
+                    out = ''
 
                     # Set streaming timing
                     msg = '>'+str(wireless_id)+',82'+str(self.streaming_interval)+\
@@ -326,28 +338,29 @@ class IMU:
         if dev_type == 'WL':
             #print 'getStreamingBatch: ', name
 
+            # The sensor might send more than one message at once so this piece of code is gonna handle that
             out = serial_port.inWaiting()
             if out > 0:
-                data = bytearray(serial_port.read(out))
+                data = serial_port.read(out)
+                 # Decode to string and replace newline with space
+                data = data.decode().replace('\r\n',' ')
+                # Remove undesired characters
 
-                # Each quaternion is a 4 byte float in the message. They are stored from byte 4 to 19. X,Y,Z,W
-                temp = ''.join(chr(i) for i in data[4:8])
-                x = struct.unpack('>f', temp)
-                x = x[0]
+                # Create a list of strings separating each message if that's the case
+                data = data.split(' ')
+                data = list(filter(None, data))
 
-                temp = ''.join(chr(i) for i in data[8:12])
-                y = struct.unpack('>f', temp)
-                y = y[0]
-
-                temp = ''.join(chr(i) for i in data[12:16])
-                z = struct.unpack('>f', temp)
-                z = z[0]         
-
-                temp = ''.join(chr(i) for i in data[16:20])
-                w = struct.unpack('>f', temp)
-                w = w[0]         
+                temp = data[-1] # Get latest message and ignore others
+                temp = temp[3:] # Remove undesired first 3 bytes 
+                temp = temp.split(',')
+                temp = numpy.array(temp).astype(numpy.float)
+                x = temp[0]
+                y = temp[1]
+                z = temp[2]
+                w = temp[3]
 
                 out = [x,y,z,w]
+                # print(out)
 
                 return out
 

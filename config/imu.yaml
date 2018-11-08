@@ -28,7 +28,7 @@ streaming_delay: 0
 streaming_slots: {'pedal': ['getTaredOrientationAsQuaternion']}
 wired_port: {'pc': '/dev/ttyACM0'}
 wireless_dng: {'pedal': 'pc'}
-wireless_id: {'pedal': 7}
+wireless_id: {'pedal': 1}
 
 ## 1 Wired streaming test ##
 # dev_names: ['pedal']

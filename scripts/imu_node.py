@@ -80,8 +80,8 @@ def main():
                         #print name, slot
                         
                         if slot == 'getTaredOrientationAsQuaternion':
-                            
-                            imuMsg = str(streaming_data[idx])                         
+
+                            # imuMsg = str(streaming_data[idx])                         
                             imuMsg.orientation.x = streaming_data[idx]
                             imuMsg.orientation.y = streaming_data[idx+1]
                             imuMsg.orientation.z = streaming_data[idx+2]

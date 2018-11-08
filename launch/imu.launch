@@ -4,7 +4,7 @@
     <rosparam command="load" file="$(find yostlabs_3space_imu)/config/imu.yaml" ns="imu" />
     
     <!-- launch nodes -->
-    <node name="imu" pkg="yostlabs_3space_imu" type="imu_node.py" output="log" respawn="true" respawn_delay="5"/>
+    <node name="imu" pkg="yostlabs_3space_imu" type="imu_node.py" output="screen" respawn="true" respawn_delay="5"/>
   </group>
 
   <!-- launch utils -->
