@@ -16,6 +16,20 @@
 
 autocalibrate: true
 
+## ROS Trike - 1 Wireless streaming test ##
+dev_names: ['pc', 'pedal']
+dev_type: {'pc': 'DNG', 'pedal': 'WL'}
+imu_mode: {'pedal': 'wireless'}
+broadcast: false
+streaming: true
+streaming_interval: 0
+streaming_duration: 'unlimited'
+streaming_delay: 0
+streaming_slots: {'pedal': ['getTaredOrientationAsQuaternion']}
+wired_port: {'pc': '/dev/ttyACM0'}
+wireless_dng: {'pedal': 'pc'}
+wireless_id: {'pedal': 7}
+
 ## 1 Wired streaming test ##
 # dev_names: ['pedal']
 # dev_type: {'pedal': 'WL'}
@@ -41,18 +55,18 @@ autocalibrate: true
 # wired_port: {'pedal': '/dev/ttyACM1', 'remote': '/dev/ttyACM2'}
 
 ## 1 Wireless streaming test ##
-dev_names: ['pc', 'pedal']
-dev_type: {'pc': 'DNG', 'pedal': 'WL'}
-imu_mode: {'pedal': 'wireless'}
-broadcast: false
-streaming: true
-streaming_interval: 0
-streaming_duration: 'unlimited'
-streaming_delay: 0
-streaming_slots: {'pedal': ['getTaredOrientationAsQuaternion', 'getNormalizedGyroRate', 'getButtonState']}
-wired_port: {'pc': '/dev/ttyACM0'}
-wireless_dng: {'pedal': 'pc'}
-wireless_id: {'pedal': 3}
+# dev_names: ['pc', 'pedal']
+# dev_type: {'pc': 'DNG', 'pedal': 'WL'}
+# imu_mode: {'pedal': 'wireless'}
+# broadcast: false
+# streaming: true
+# streaming_interval: 0
+# streaming_duration: 'unlimited'
+# streaming_delay: 0
+# streaming_slots: {'pedal': ['getTaredOrientationAsQuaternion', 'getNormalizedGyroRate', 'getButtonState']}
+# wired_port: {'pc': '/dev/ttyACM0'}
+# wireless_dng: {'pedal': 'pc'}
+# wireless_id: {'pedal': 7}
 
 ## 2 Wireless streaming test ##
 # dev_names: ['pc', 'pedal', 'remote']

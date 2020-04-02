@@ -4,6 +4,7 @@ import rospy
 
 # import ros msgs
 import ema.modules.imu as imu
+from std_msgs.msg import String
 from sensor_msgs.msg import Imu
 from std_msgs.msg import Int8
 
@@ -17,8 +18,9 @@ def main():
     # list published topics
     pub = {}
     for name in imu_manager.imus:
+        # pub[name] = rospy.Publisher('imu/' + name, String, queue_size=10)
         pub[name] = rospy.Publisher('imu/' + name, Imu, queue_size=10)
-        pub[name + '_buttons'] = rospy.Publisher('imu/' + name + '_buttons', Int8, queue_size=10)
+        # pub[name + '_buttons'] = rospy.Publisher('imu/' + name + '_buttons', Int8, queue_size=10)
 
     # define loop rate (in hz)
     rate = rospy.Rate(200)
@@ -30,6 +32,7 @@ def main():
             timestamp = rospy.Time.now()
             frame_id = 'base_link'
 
+            # POOLING MODE
             if imu_manager.streaming == False:
                 ## messages are shared by all imus
                 imuMsg = Imu()
@@ -63,13 +66,14 @@ def main():
                     
                     pub[name + '_buttons'].publish(buttons)
             else:
+                # STREAMING MODE
                 if imu_manager.broadcast == False:
                     for name in imu_manager.imus:
-                        ## one message per imu
+                        # one message per imu
                         imuMsg = Imu()
                         imuMsg.header.stamp = timestamp
                         imuMsg.header.frame_id = frame_id
-                        buttons = Int8()
+                        # buttons = Int8()
                         
                         streaming_data = imu_manager.getStreamingData(name)
                         idx = 0
@@ -78,7 +82,7 @@ def main():
                             #print name, slot
                             
                             if slot == 'getTaredOrientationAsQuaternion':
-                                                            
+                      
                                 imuMsg.orientation.x = streaming_data[idx]
                                 imuMsg.orientation.y = streaming_data[idx+1]
                                 imuMsg.orientation.z = streaming_data[idx+2]
@@ -116,7 +120,9 @@ def main():
 
                         # publish streamed data
                         pub[name].publish(imuMsg)
-                        pub[name + '_buttons'].publish(buttons)
+                        # pub[name + '_buttons'].publish(buttons)
+
+                # BROADCAST MODE
                 else:
                     for name in imu_manager.imus:
                         ## one message per imu
@@ -153,6 +159,7 @@ def main():
                         # publish streamed data
                         pub[name].publish(imuMsg)
                         pub[name + '_buttons'].publish(buttons)
+
         except TypeError:
             print 'TypeError occured!'
 
