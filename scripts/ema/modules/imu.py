@@ -4,7 +4,6 @@ import numpy
 import serial
 import struct
 import binascii
-from ema.libs.yei import threespace_api as ts_api
 
 class IMU:
     def __init__(self, config_dict):

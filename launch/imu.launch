@@ -1,14 +1,22 @@
+<!--
+    ROSLAUNCH is a tool for easily launching multiple ROS nodes locally and remotely via SSH, as well as setting 
+    parameters on the Parameter Server. It includes options to automatically respawn processes that have already 
+    died. ROSLAUNCH takes in one or more XML configuration files (with the .launch extension) that specify the 
+    parameters to set and nodes to launch, as well as the machines that they should be run on.
+    ROSLAUNCH uses XML files that describe the nodes that should be run, parameters that should be set, and other 
+    attributes of launching a collection of ROS nodes. For a specification of this XML format, please see:
+    http://wiki.ros.org/roslaunch/XML
+-->
+
 <launch>
   <group ns="ema">
-    <!-- load config files-->
+
+    <!-- load common config files-->
     <rosparam command="load" file="$(find yostlabs_3space_imu)/config/imu.yaml" ns="imu" />
     
-    <!-- launch nodes -->
+    <!-- launch common nodes -->
     <node name="imu" pkg="yostlabs_3space_imu" type="imu_node.py" output="screen" respawn="true" respawn_delay="5"/>
-  </group>
+    <node name="dashboard" pkg="rqt_gui" type="rqt_gui" output="log" args="--perspective-file $(find yostlabs_3space_imu)/perspective/EMA_IMU.perspective"/>
 
-  <!-- launch utils -->
-  <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find yostlabs_3space_imu)/config/rviz/imu.rviz" output="log" respawn="true" respawn_delay="5"/>
-  <node name="rqt_graph" pkg="rqt_graph" type="rqt_graph" output="log" respawn="true" respawn_delay="5"/>
-  <node name="rqt_plot" pkg="rqt_plot" type="rqt_plot" output="log" respawn="true" respawn_delay="5"/> -->
+  </group>
 </launch>
