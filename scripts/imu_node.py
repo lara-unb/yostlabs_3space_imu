@@ -1,24 +1,38 @@
 #!/usr/bin/env python
 
+"""
+
+Particularly, this code initializes the IMU devices, receives the measurements 
+and publish them as ROS messages.
+
+The ROS node runs this code. It should make all the necessary
+communication/interaction with ROS and it shouldn't deal with minor details.
+For example, it would be used to publish a filtered sensor measurement as
+a ROS message to other ROS nodes instead of establishing the serial comm
+and treating that raw measurement. For more info, check:
+http://wiki.ros.org/Nodes
+
+"""
+
 import rospy
+import ema.modules.imu as imu
 
 # import ros msgs
-import ema.modules.imu as imu
 from std_msgs.msg import String
 from sensor_msgs.msg import Imu
 from std_msgs.msg import Int8
+
 
 def main():
     # init imu node
     rospy.init_node('imu', anonymous=False)
 
     # get imu config
-    imu_manager = imu.IMU(rospy.get_param('/ema/imu'))
+    imu_manager = imu.IMU(rospy.get_param('imu'))
 
     # list published topics
     pub = {}
     for name in imu_manager.imus:
-        # pub[name] = rospy.Publisher('imu/' + name, String, queue_size=10)
         pub[name] = rospy.Publisher('imu/' + name, Imu, queue_size=10)
         # pub[name + '_buttons'] = rospy.Publisher('imu/' + name + '_buttons', Int8, queue_size=10)
 
@@ -158,7 +172,7 @@ def main():
 
                         # publish streamed data
                         pub[name].publish(imuMsg)
-                        pub[name + '_buttons'].publish(buttons)
+                        # pub[name + '_buttons'].publish(buttons)
 
         except TypeError:
             print 'TypeError occured!'
