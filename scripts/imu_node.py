@@ -15,7 +15,7 @@ http://wiki.ros.org/Nodes
 """
 
 import rospy
-import ema.modules.imu as imu
+import modules.imu as imu
 
 # import ros msgs
 from std_msgs.msg import String

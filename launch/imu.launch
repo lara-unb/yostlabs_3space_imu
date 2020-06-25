@@ -11,14 +11,14 @@ http://wiki.ros.org/roslaunch/XML
 -->
 
 <launch>
-  <group ns="ema">
+    <group ns="ema">
 
-    <!-- load common config files-->
-    <rosparam command="load" file="$(find yostlabs_3space_imu)/config/imu.yaml" ns="imu" />
-    
-    <!-- launch common nodes -->
-    <node name="imu" pkg="yostlabs_3space_imu" type="imu_node.py" output="screen" respawn="true" respawn_delay="5"/>
-    <node name="dashboard" pkg="rqt_gui" type="rqt_gui" output="log" args="--perspective-file $(find yostlabs_3space_imu)/perspective/EMA_IMU.perspective"/>
+        <!-- load common config files-->
+        <rosparam command="load" file="$(find yostlabs_3space_imu)/config/imu.yaml" ns="imu" />
+        
+        <!-- launch common nodes -->
+        <node name="imu" pkg="yostlabs_3space_imu" type="imu_node.py" output="screen" respawn="true" respawn_delay="5"/>
+        <node name="dashboard" pkg="rqt_gui" type="rqt_gui" output="log" args="--perspective-file $(find yostlabs_3space_imu)/perspective/EMA_IMU.perspective"/>
 
-  </group>
+    </group>
 </launch>
