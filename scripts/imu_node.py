@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 
@@ -13,6 +13,12 @@ and treating that raw measurement. For more info, check:
 http://wiki.ros.org/Nodes
 
 """
+
+# Python 2 and 3 compatibility
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from builtins import *
 
 import rospy
 import modules.imu as imu
@@ -93,7 +99,7 @@ def main():
                         idx = 0
                         
                         for slot in imu_manager.streaming_slots[name]:
-                            #print name, slot
+                            #print(name, slot)
                             
                             if slot == 'getTaredOrientationAsQuaternion':
                       
@@ -119,8 +125,6 @@ def main():
                                 imuMsg.linear_acceleration.z = -streaming_data[idx+2]
                                 
                                 idx = idx + 3
-                                
-                                print type(streaming_data)
                                 
                             elif slot == 'getButtonState':
 
@@ -175,7 +179,7 @@ def main():
                         # pub[name + '_buttons'].publish(buttons)
 
         except TypeError:
-            print 'TypeError occured!'
+            print('TypeError occured!')
 
         # sleep until it's time to work again
         rate.sleep()

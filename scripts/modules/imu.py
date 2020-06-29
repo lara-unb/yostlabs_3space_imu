@@ -1,11 +1,24 @@
-#IMU functions
+"""
+
+Particularly, this code is an auxiliary module for the IMU sensors
+application. It consists of classes and methods that establish the serial
+comm and give support in a deeper level.
+
+The ROS node uses this code. It gives support in a deeper level, dealing
+with minor details and is supposed to be independent of ROS, meaning it
+shouldn't have to interact with ROS in any way. For example, it would
+establish serial comm and treat raw measurements instead of publishing a
+filtered sensor measurement as a ROS message to other ROS nodes.
+
+"""
+
 import time
 import numpy
 import serial
 import struct
 import binascii
 
-class IMU:
+class IMU(object):
     def __init__(self, config_dict):
         self.config_dict = config_dict
         self.broadcast = False
@@ -46,8 +59,6 @@ class IMU:
 
                     # self.devices[name] = ts_api.TSWLSensor(logical_id=wireless_id, dongle=self.devices[wireless_dng])
                     self.wireless_imus.append(name)
-
-                    # print self.devices[name]
 
         if config_dict['autocalibrate'] == True:
             self.autocalibrate()
@@ -163,7 +174,6 @@ class IMU:
         serial_port = self.serialport # Serial port of the respective dongle
 
         if dev_type == 'WL':
-            #print 'calibrate: ', name
             msg = '>'+str(wireless_id)+',165\n'
             print(msg)
             serial_port.write(msg)
@@ -176,7 +186,7 @@ class IMU:
             return 1
 
         else:
-            print 'calibrate not defined for dev_type = ', dev_type
+            print('calibrate not defined for dev_type = ', dev_type)
             return 0
 
 ########################################
@@ -189,7 +199,6 @@ class IMU:
         serial_port = self.serialport # Serial port of the respective dongle
 
         if dev_type == 'WL':
-            #print 'setEulerToYXZ: ', name
             msg = '>'+str(wireless_id)+',16,5\n'
             print(msg)
             serial_port.write(msg)
@@ -202,7 +211,7 @@ class IMU:
             return 1
 
         else:
-            #print 'setEulerToYXZ not defined for dev_type = ', dev_type
+            print('setEulerToYXZ not defined for dev_type = ', dev_type)
             return 0
 
 ########################################
@@ -215,7 +224,6 @@ class IMU:
         serial_port = self.serialport # Serial port of the respective dongle
 
         if dev_type == 'WL':
-            #print 'tare: ', name
             msg = '>'+str(wireless_id)+',96\n'
             print(msg)
             serial_port.write(msg)
@@ -228,7 +236,7 @@ class IMU:
             return 1
 
         else:
-            print 'tare not defined for dev_type = ', dev_type
+            print('tare not defined for dev_type = ', dev_type)
             return 0
 
 ########################################
@@ -239,11 +247,10 @@ class IMU:
         dev_type = self.config_dict['dev_type'][name]
 
         if dev_type == 'WL':
-            #print 'checkButtons: ', name
             return self.devices[name].getButtonState()
 
         else:
-            print 'checkButtons not defined for dev_type = ', dev_type
+            print('checkButtons not defined for dev_type = ', dev_type)
             return 0
 
 ########################################
@@ -254,11 +261,10 @@ class IMU:
         dev_type = self.config_dict['dev_type'][name]
 
         if dev_type == 'WL':
-            #print 'getQuaternion: ', name
             return self.devices[name].getTaredOrientationAsQuaternion()
 
         else:
-            print 'getQuaternion not defined for dev_type = ', dev_type
+            print('getQuaternion not defined for dev_type = ', dev_type)
             return 0
 
 ########################################
@@ -272,7 +278,6 @@ class IMU:
         angle = []
 
         if dev_type == 'WL':
-            #print 'getEulerAngles: ', name
             msg = '>'+str(wireless_id)+',1\n'
             print(msg)
             serial_port.write(msg)
@@ -300,7 +305,7 @@ class IMU:
                 return out
 
         else:
-            print 'getEulerAngles not defined for dev_type = ', dev_type
+            print('getEulerAngles not defined for dev_type = ', dev_type)
             return 0
 
 ########################################
@@ -311,22 +316,20 @@ class IMU:
         dev_type = self.config_dict['dev_type'][name]
 
         if dev_type == 'WL':
-            #print 'getGyroData: ', name
             return self.devices[name].getNormalizedGyroRate()
 
         else:
-            print 'getGyroData not defined for dev_type = ', dev_type
+            print('getGyroData not defined for dev_type = ', dev_type)
             return 0
 
     def getAccelData(self, name): ## G: getCorrectedAccelerometerVector, need TSSensor (don't do for dongle)
         dev_type = self.config_dict['dev_type'][name]
 
         if dev_type == 'WL':
-            #print 'getAccelData: ', name
             return self.devices[name].getCorrectedAccelerometerVector()
 
         else:
-            print 'getAccelData not defined for dev_type = ', dev_type
+            print('getAccelData not defined for dev_type = ', dev_type)
             return 0
 
     def getStreamingData(self, name): ## G: getStreamingBatch, need TSSensor (don't do for dongle)
@@ -335,8 +338,6 @@ class IMU:
         serial_port = self.serialport # Serial port of the respective dongle
 
         if dev_type == 'WL':
-            #print 'getStreamingBatch: ', name
-
             # The sensor might send more than one message at once so this piece of code is gonna handle that
             out = serial_port.inWaiting()
             if out > 0:
@@ -359,12 +360,11 @@ class IMU:
                 w = temp[3]
 
                 out = [x,y,z,w]
-                # print(out)
 
                 return out
 
         else:
-            print 'getStreamingBatch not defined for dev_type = ', dev_type
+            print('getStreamingBatch not defined for dev_type = ', dev_type)
             return 0
     
     def shutdown(self):
@@ -373,7 +373,7 @@ class IMU:
 
         if self.streaming == True:
             for name in self.imus:
-                print 'shutting down'
+                print('shutting down')
             
                 # Stop streaming
                 msg = '>'+str(wireless_id)+',86\n'
@@ -386,7 +386,7 @@ class IMU:
 
     def autocalibrate(self):
         for name in self.imus:
-            print "Calibrating", name
+            print("Calibrating", name)
             calibrationError = 10
             count = 0
             while calibrationError > 0.1 :
@@ -401,11 +401,11 @@ class IMU:
                 calibrationError = ang[0] + ang[1] + ang[2]
 
                 if(oldError != calibrationError):
-                    print "Error:", calibrationError
+                    print("Error:", calibrationError)
                 else:
-                    print "Stopped calibrating",name,"due to error stabilization after",count,"attempts"
+                    print("Stopped calibrating",name,"due to error stabilization after",count,"attempts")
                     break
-            print "Done"
+            print("Done")
 
     def setRightHandedAxis(self):
         # axes definitions
@@ -423,8 +423,8 @@ class IMU:
         axis_direction_byte = (x_inverted << 5) |(y_inverted << 4)  | (z_inverted << 3) | axes
 
         for name in self.imus:
-            print "Changing", name, "to right handed axis"
-            print "axis_direction_byte:", '{:08b}'.format(axis_direction_byte)
+            print("Changing", name, "to right handed axis")
+            print("axis_direction_byte:", '{:08b}'.format(axis_direction_byte))
             self.devices[name].setAxisDirections(axis_direction_byte)
 
     def setLeftHandedAxis(self):
@@ -443,8 +443,8 @@ class IMU:
         axis_direction_byte = (x_inverted << 5) |(y_inverted << 4)  | (z_inverted << 3) | axes
 
         for name in self.imus:
-            print "Changing", name, "to left handed axis"
-            print "axis_direction_byte:", '{:08b}'.format(axis_direction_byte)
+            print("Changing", name, "to left handed axis")
+            print("axis_direction_byte:", '{:08b}'.format(axis_direction_byte))
             self.devices[name].setAxisDirections(axis_direction_byte)
 
 ########################################
