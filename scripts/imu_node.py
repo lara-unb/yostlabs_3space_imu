@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 """
 
@@ -14,20 +14,43 @@ http://wiki.ros.org/Nodes
 
 """
 
-# Python 2 and 3 compatibility
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from builtins import *
+# # Python 2 and 3 compatibility
+# from __future__ import absolute_import
+# from __future__ import division
+# from __future__ import print_function
+# from builtins import *
 
 import rospy
 import modules.imu as imu
 
 # import ros msgs
 from std_msgs.msg import String
-from sensor_msgs.msg import Imu
 from std_msgs.msg import Int8
+from sensor_msgs.msg import Imu
+from ema_common_msgs.srv import SetUInt16
 
+# import utilities
+import yaml
+import rospkg
+
+def set_imu_number_callback(req):
+    imu_now = rospy.get_param('imu/wireless_id/pedal')
+    msg = str(imu_now)
+    if imu_now != req.data:
+        if req.data > 0 and req.data <= 10:
+            rospy.set_param('imu/wireless_id/pedal', req.data)
+            rospack = rospkg.RosPack()
+            imu_cfg_path = rospack.get_path('yostlabs_3space_imu')+'/config/imu.yaml'
+
+            with open(imu_cfg_path, 'r') as f:
+                imu_file = yaml.safe_load(f)
+                imu_file['wireless_id']['pedal'] = req.data
+            with open(imu_cfg_path, 'w') as f:
+                yaml.safe_dump(imu_file, f, default_flow_style=False)
+
+            msg = str(req.data)
+            return {'success':True, 'message':msg}
+    return {'success':False, 'message':msg}
 
 def main():
     # init imu node
@@ -35,6 +58,11 @@ def main():
 
     # get imu config
     imu_manager = imu.IMU(rospy.get_param('imu'))
+
+    # list provided services
+    services = {}
+    services['set_imu_number'] = rospy.Service('imu/set_imu_number',
+        SetUInt16, set_imu_number_callback)
 
     # list published topics
     pub = {}
