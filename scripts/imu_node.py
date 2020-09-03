@@ -26,12 +26,18 @@ import modules.imu as imu
 # import ros msgs
 from std_msgs.msg import String
 from std_msgs.msg import Int8
+from std_srvs.srv import Empty
 from sensor_msgs.msg import Imu
 from ema_common_msgs.srv import SetUInt16
 
 # import utilities
 import yaml
 import rospkg
+
+def kill_node_callback(req):
+    rospy.loginfo('Node shutdown: service request')
+    rospy.Timer(rospy.Duration(1), rospy.signal_shutdown, oneshot=True)
+    return {}
 
 def set_imu_number_callback(req):
     imu_now = rospy.get_param('imu/wireless_id/pedal')
@@ -49,6 +55,8 @@ def set_imu_number_callback(req):
                 yaml.safe_dump(imu_file, f, default_flow_style=False)
 
             msg = str(req.data)
+            rospy.loginfo('Node shutdown: new imu number')
+            rospy.Timer(rospy.Duration(1), rospy.signal_shutdown, oneshot=True)
             return {'success':True, 'message':msg}
     return {'success':False, 'message':msg}
 
@@ -61,8 +69,8 @@ def main():
 
     # list provided services
     services = {}
-    services['set_imu_number'] = rospy.Service('imu/set_imu_number',
-        SetUInt16, set_imu_number_callback)
+    services['kill_node'] = rospy.Service('imu/kill_node', Empty, kill_node_callback)
+    services['set_imu_number'] = rospy.Service('imu/set_imu_number', SetUInt16, set_imu_number_callback)
 
     # list published topics
     pub = {}
