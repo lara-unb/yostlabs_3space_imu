@@ -52,7 +52,7 @@ def set_imu_number_callback(req):
                 imu_file = yaml.safe_load(f)
                 imu_file['wireless_id']['pedal'] = req.data
             with open(imu_cfg_path, 'w') as f:
-                yaml.safe_dump(imu_file, f, default_flow_style=False)
+                yaml.safe_dump(imu_file, f)
 
             msg = str(req.data)
             rospy.loginfo('Node shutdown: new imu number')
