@@ -35,25 +35,36 @@ import yaml
 import rospkg
 
 def kill_node_callback(req):
+    """ROS Service handler to shutdown this node.
+
+    Attributes:
+        req (Empty): empty input
+    """
+    # Shutdown this node and rely on roslaunch respawn to restart
     rospy.loginfo('Node shutdown: service request')
     rospy.Timer(rospy.Duration(1), rospy.signal_shutdown, oneshot=True)
     return {}
 
 def set_imu_number_callback(req):
+    """ROS Service handler to set a different IMU number.
+
+    Attributes:
+        req (int): new IMU number from 0 to 10
+    """
     imu_now = rospy.get_param('imu/wireless_id/pedal')
     msg = str(imu_now)
     if imu_now != req.data:
-        if req.data > 0 and req.data <= 10:
-            rospy.set_param('imu/wireless_id/pedal', req.data)
+        if req.data > 0 and req.data <= 10:  # Acceptable range
+            rospy.set_param('imu/wireless_id/pedal', req.data)  # Change the param server
             rospack = rospkg.RosPack()
             imu_cfg_path = rospack.get_path('yostlabs_3space_imu')+'/config/imu.yaml'
-
+            # Change the config yaml file
             with open(imu_cfg_path, 'r') as f:
                 imu_file = yaml.safe_load(f)
                 imu_file['wireless_id']['pedal'] = req.data
             with open(imu_cfg_path, 'w') as f:
                 yaml.safe_dump(imu_file, f)
-
+            # Shutdown this node and rely on roslaunch respawn to restart
             msg = str(req.data)
             rospy.loginfo('Node shutdown: new imu number')
             rospy.Timer(rospy.Duration(1), rospy.signal_shutdown, oneshot=True)
