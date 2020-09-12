@@ -106,10 +106,11 @@ class IMU(object):
                     # Since this file was adapted for a specific application, the field "streaming_slots" from the configuration 
                     # file (imu.yalm) wont be treated here, but it should if a generalized application is desired
 
-                    command = 0 # Code for GetTaredOrientationAsQuaternion, the only slot used here
+                    command1 = 0 # Code for getTaredOrientationAsQuaternion
+                    command2 = 33 # Code for getNormalizedGyroRate
 
                     # Set streaming slots
-                    msg = '>'+str(wireless_id)+',80,'+str(command)+',255,255,255,255,255,255,255\n'
+                    msg = '>'+str(wireless_id)+',80,'+str(command1)+str(command2)+',255,255,255,255,255,255\n'
                     print(msg)
                     serial_port.write(msg)
                     time.sleep(0.1)
@@ -358,8 +359,11 @@ class IMU(object):
                 y = temp[1]
                 z = temp[2]
                 w = temp[3]
+                v1 = temp[4]
+                v2 = temp[5]
+                v3 = temp[6]
 
-                out = [x,y,z,w]
+                out = [x,y,z,w,v1,v2,v3]
 
                 return out
 

@@ -8,7 +8,7 @@ streaming_delay: 0
 streaming_duration: unlimited
 streaming_interval: 0
 streaming_slots:
-  pedal: [getTaredOrientationAsQuaternion]
+  pedal: [getTaredOrientationAsQuaternion, getNormalizedGyroRate]
 wired_port: {pc: /dev/ttyACM0}
 wireless_dng: {pedal: pc}
 wireless_id: {pedal: 7}
