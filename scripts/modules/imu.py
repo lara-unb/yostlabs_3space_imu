@@ -110,7 +110,7 @@ class IMU(object):
                     command2 = 33 # Code for getNormalizedGyroRate
 
                     # Set streaming slots
-                    msg = '>'+str(wireless_id)+',80,'+str(command1)+str(command2)+',255,255,255,255,255,255\n'
+                    msg = '>'+str(wireless_id)+',80,'+str(command1)+','+str(command2)+',255,255,255,255,255,255\n'
                     print(msg)
                     serial_port.write(msg)
                     time.sleep(0.1)
@@ -343,28 +343,49 @@ class IMU(object):
             out = serial_port.inWaiting()
             if out > 0:
                 data = serial_port.read(out)
-                 # Decode to string and replace newline with space
+                # print("DATA_RAW: ", data)
+
+                # Decode to string and replace newline with space
                 data = data.decode().replace('\r\n',' ')
-                # Remove undesired characters
+                # print("DATA_DECODED: ", data)
 
                 # Create a list of strings separating each message if that's the case
                 data = data.split(' ')
                 data = list(filter(None, data))
+                # print("DATA_FILTERED: ", data)
+                
+                # Get the 2 latest messages and ignore others
+                temp = data[-2] # Quartenios msg
+                temp2 = data[-1] # Gyroscope msg
 
-                temp = data[-1] # Get latest message and ignore others
-                temp = temp[3:] # Remove undesired first 3 bytes 
+                # Remove undesired first 3 bytes
+                temp = temp[3:]  # only on quart
+                # print("QUART_MSG: ", temp)
+                # print("GYRO_MSG: ", temp2) 
+                
                 temp = temp.split(',')
+                temp2 = temp2.split(',')
+                # print("QUART_MSG_SPLITTED: ", temp)
+                # print("GYRO_MSG_SPLITTED: ", temp2)
+                
+                # Convert to float
                 temp = numpy.array(temp).astype(numpy.float)
+                temp2 = numpy.array(temp2).astype(numpy.float)
+                # print('QUART_MSG_CONVERTED:', temp)
+                # print('GYRO_MSG_CONVERTED:', temp2)
+                
+                # Quartenions
                 x = temp[0]
                 y = temp[1]
                 z = temp[2]
                 w = temp[3]
-                v1 = temp[4]
-                v2 = temp[5]
-                v3 = temp[6]
+
+                # Gyroscope
+                v1 = temp2[0]
+                v2 = temp2[1]
+                v3 = temp2[2]
 
                 out = [x,y,z,w,v1,v2,v3]
-
                 return out
 
         else:
