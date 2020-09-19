@@ -30,14 +30,16 @@ class IMU(object):
         self.wireless_imus = []
         self.sensor_list = []
         self.serialport = serial.Serial()
+        self.manual_calibration = False
+        self.tare_calibration = []
+        self.baudrate = 115200 # default baudrate
 
         for name in config_dict['dev_names']:
             dev_type = config_dict['dev_type'][name]
 
             if dev_type == 'DNG':
                 wired_port = config_dict['wired_port'][name]
-
-                self.serialport = serial.Serial(port=wired_port, baudrate=115200, timeout=0.001)
+                self.serialport = serial.Serial(port=wired_port, baudrate=self.baudrate, timeout=0.001)
                 time.sleep(0.1)
                 self.serialport.flush()
                 time.sleep(0.1)
@@ -62,6 +64,14 @@ class IMU(object):
 
         if config_dict['autocalibrate'] == True:
             self.autocalibrate()
+            self.getAutocalibrationInfo()
+
+        if config_dict['manual_calibration'] == True:
+            for name in self.imus:
+                # Set axis
+                self.setEulerToYXZ(name)
+                # Tare with fixed quartenion
+                self.tareWithQuaternion(name)
             
         if config_dict['streaming'] == True:
             self.streaming = True
@@ -83,11 +93,12 @@ class IMU(object):
                     # Set compass enable
                     msg = '>'+str(wireless_id)+',109,0'+'\n'
                     print(msg)
-                    serial_port.write(msg)
+                    serial_port.write(msg.encode())
                     time.sleep(0.1)
                     out = ''
                     while serial_port.inWaiting():
-                        out += '>> ' + serial_port.read(serial_port.inWaiting())
+                        temp_msg = serial_port.read(serial_port.inWaiting())
+                        out += '>> ' + temp_msg.decode()
                     print(out)
                     out = ''
 
@@ -95,11 +106,12 @@ class IMU(object):
                     msg = '>'+str(wireless_id)+',82'+str(self.streaming_interval)+\
                             str(self.streaming_duration)+str(self.streaming_delay)+'\n'
                     print(msg)
-                    serial_port.write(msg)
+                    serial_port.write(msg.encode())
                     time.sleep(0.1)
                     out = ''
                     while serial_port.inWaiting():
-                        out += '>> ' + serial_port.read(serial_port.inWaiting())
+                        temp_msg = serial_port.read(serial_port.inWaiting())
+                        out += '>> ' + temp_msg.decode()
                     print(out)
                     out = ''
 
@@ -108,24 +120,28 @@ class IMU(object):
 
                     command1 = 0 # Code for getTaredOrientationAsQuaternion
                     command2 = 33 # Code for getNormalizedGyroRate
+                    command3 = 202 # Battery Percentage
 
                     # Set streaming slots
-                    msg = '>'+str(wireless_id)+',80,'+str(command1)+','+str(command2)+',255,255,255,255,255,255\n'
+                    msg = '>'+str(wireless_id)+',80,'+str(command1)+\
+                          ','+str(command2)+','+str(command3)+',255,255,255,255,255\n'
                     print(msg)
-                    serial_port.write(msg)
+                    serial_port.write(msg.encode())
                     time.sleep(0.1)
                     out = ''
                     while serial_port.inWaiting():
-                        out += '>> ' + serial_port.read(serial_port.inWaiting())
+                        temp_msg = serial_port.read(serial_port.inWaiting())
+                        out += '>> ' + temp_msg.decode()
                     print(out)
                     out = ''
 
                     # Start streaming
-                    serial_port.write('>'+str(wireless_id)+',85\n')
+                    msg = '>'+str(wireless_id)+',85\n'
+                    serial_port.write(msg.encode())
                     time.sleep(0.1)
                     while serial_port.inWaiting():
-                        out = '>> ' + serial_port.read(serial_port.inWaiting())
-
+                        temp_msg = serial_port.read(serial_port.inWaiting())
+                        out = '>> ' + temp_msg.decode()
                     print('Start')
                     
                     # # Start streaming
@@ -177,11 +193,12 @@ class IMU(object):
         if dev_type == 'WL':
             msg = '>'+str(wireless_id)+',165\n'
             print(msg)
-            serial_port.write(msg)
+            serial_port.write(msg.encode())
             time.sleep(0.1)
             out = ''
             while serial_port.inWaiting():
-                out += '>> ' + serial_port.read(serial_port.inWaiting())
+                temp_msg = serial_port.read(serial_port.inWaiting())
+                out += '>> ' + temp_msg.decode('utf-8')
             print(out)
             out = ''
             return 1
@@ -202,11 +219,12 @@ class IMU(object):
         if dev_type == 'WL':
             msg = '>'+str(wireless_id)+',16,5\n'
             print(msg)
-            serial_port.write(msg)
+            serial_port.write(msg.encode())
             time.sleep(0.1)
             out = ''
             while serial_port.inWaiting():
-                out += '>> ' + serial_port.read(serial_port.inWaiting())
+                temp_msg = serial_port.read(serial_port.inWaiting())
+                out += '>> ' + temp_msg.decode()
             print(out)
             out = ''
             return 1
@@ -227,11 +245,12 @@ class IMU(object):
         if dev_type == 'WL':
             msg = '>'+str(wireless_id)+',96\n'
             print(msg)
-            serial_port.write(msg)
+            serial_port.write(msg.encode())
             time.sleep(0.1)
             out = ''
             while serial_port.inWaiting():
-                out += '>> ' + serial_port.read(serial_port.inWaiting())
+                temp_msg = serial_port.read(serial_port.inWaiting())
+                out += '>> ' + temp_msg.decode()
             print(out)
             out = ''
             return 1
@@ -239,6 +258,34 @@ class IMU(object):
         else:
             print('tare not defined for dev_type = ', dev_type)
             return 0
+
+########################################
+# Tare with quartenions
+########################################
+
+    def tareWithQuaternion(self, name):
+        dev_type = self.config_dict['dev_type'][name]
+        wireless_id = self.config_dict['wireless_id'][name] # Logical id of WL device in associated dongle's wireless table
+        serial_port = self.serialport # Serial port of the respective dongle
+        tare_quartenion = self.config_dict['tare_calibration']['imu'+str(wireless_id)] # Fixed quartenion
+
+        if dev_type == 'WL':
+            msg = '>'+str(wireless_id)+',97,'+','.join(map(str,tare_quartenion[0:4]))+'\n'
+            print(msg)
+            serial_port.write(msg.encode())
+            time.sleep(0.1)
+            out = ''
+            while serial_port.inWaiting():
+                temp_msg = serial_port.read(serial_port.inWaiting())
+                out += '>> ' + temp_msg.decode()
+            print(out)
+            out = ''
+            return 1
+        
+        else:
+            print('tareWithQuartion not defined for dev_type = ', dev_type)
+            return 0
+
 
 ########################################
 # Check Buttons
@@ -281,7 +328,7 @@ class IMU(object):
         if dev_type == 'WL':
             msg = '>'+str(wireless_id)+',1\n'
             print(msg)
-            serial_port.write(msg)
+            serial_port.write(msg.encode())
             time.sleep(0.1)
 
             out = serial_port.inWaiting()
@@ -290,15 +337,15 @@ class IMU(object):
 
                 # Each angle is a 4 byte float in the message. They are stored from byte 4 to 15. Pitch, Yaw, Roll
                 temp = ''.join(chr(i) for i in data[4:8])
-                pitch = struct.unpack('>f', temp)
+                pitch = struct.unpack('>f', temp.encode())
                 pitch = pitch[0]
 
                 temp = ''.join(chr(i) for i in data[8:12])
-                yaw = struct.unpack('>f', temp)
+                yaw = struct.unpack('>f', temp.encode())
                 yaw = yaw[0]
 
                 temp = ''.join(chr(i) for i in data[12:16])
-                roll = struct.unpack('>f', temp)
+                roll = struct.unpack('>f', temp.encode())
                 roll = roll[0]         
 
                 out = [pitch, yaw, roll]
@@ -355,38 +402,51 @@ class IMU(object):
                 # print("DATA_FILTERED: ", data)
                 
                 # Get the 2 latest messages and ignore others
-                temp = data[-2] # Quartenios msg
-                temp2 = data[-1] # Gyroscope msg
+                temp = data[-3] # Quartenios msg
+                temp2 = data[-2] # Gyroscope msg
+                temp3 = data[-1] # Battery level
 
                 # Remove undesired first 3 bytes
                 temp = temp[3:]  # only on quart
                 # print("QUART_MSG: ", temp)
-                # print("GYRO_MSG: ", temp2) 
+                # print("GYRO_MSG: ", temp2)
                 
                 temp = temp.split(',')
                 temp2 = temp2.split(',')
                 # print("QUART_MSG_SPLITTED: ", temp)
                 # print("GYRO_MSG_SPLITTED: ", temp2)
-                
+                # print("BATTERY_MSG: ", temp3)
+
                 # Convert to float
                 temp = numpy.array(temp).astype(numpy.float)
                 temp2 = numpy.array(temp2).astype(numpy.float)
+                temp3 = numpy.array(temp3).astype(numpy.uint8)
                 # print('QUART_MSG_CONVERTED:', temp)
                 # print('GYRO_MSG_CONVERTED:', temp2)
-                
+                # print("BATTERY_MSG_CONVERTED: ", temp3)
                 # Quartenions
                 x = temp[0]
                 y = temp[1]
                 z = temp[2]
                 w = temp[3]
+                # qt_msg = [x, y, z, w]
+                # print('QUART_PUB_MSG: ', qt_msg)
 
                 # Gyroscope
                 v1 = temp2[0]
                 v2 = temp2[1]
                 v3 = temp2[2]
+                # v_msg = [v1, v2, v3]
+                # print('GYRO_PUB_MSG: ', v_msg)
 
-                out = [x,y,z,w,v1,v2,v3]
+                # Battery
+                b = temp3
+
+                out = [x,y,z,w,v1,v2,v3,b]
+                # out = 0
                 return out
+            else:
+                return None
 
         else:
             print('getStreamingBatch not defined for dev_type = ', dev_type)
@@ -403,7 +463,7 @@ class IMU(object):
                 # Stop streaming
                 msg = '>'+str(wireless_id)+',86\n'
                 print(msg)
-                serial_port.write(msg)
+                serial_port.write(msg.encode())
                 time.sleep(0.1)
 
                 serial_port.close()
@@ -431,6 +491,54 @@ class IMU(object):
                     print("Stopped calibrating",name,"due to error stabilization after",count,"attempts")
                     break
             print("Done")
+
+    def getAutocalibrationInfo(self):
+        for name in self.imus:
+            dev_type = self.config_dict['dev_type'][name]
+            wireless_id = self.config_dict['wireless_id'][name] # Logical id of WL device in associated dongle's wireless table
+            serial_port = self.serialport # Serial port of the respective dongle
+
+            if dev_type == 'WL':
+                # Get current tare in quartenions
+                msg = '>'+str(wireless_id)+',128\n'
+                print(msg)
+                serial_port.write(msg.encode())
+                time.sleep(0.1)
+                out = ''
+                while serial_port.inWaiting():
+                    temp_msg = serial_port.read(serial_port.inWaiting())
+                    out += '>> ' + temp_msg.decode()
+                print('tareAsQuartenion: ', out)
+                out = ''
+
+                # Get compass calibration coeff - matrix
+                msg = '>'+str(wireless_id)+',162\n'
+                print(msg)
+                serial_port.write(msg.encode())
+                time.sleep(0.1)
+                out = ''
+                while serial_port.inWaiting():
+                    temp_msg = serial_port.read(serial_port.inWaiting())
+                    out += '>> ' + temp_msg.decode()
+                print('compass_coeffs: ', out)
+                out = ''
+
+                # Get gyroscope calibration coeff - matrix
+                msg = '>'+str(wireless_id)+',163\n'
+                print(msg)
+                serial_port.write(msg.encode())
+                time.sleep(0.1)
+                out = ''
+                while serial_port.inWaiting():
+                    temp_msg = serial_port.read(serial_port.inWaiting())
+                    out += '>> ' + temp_msg.decode()
+                print('gyro_coeffs: ', out)
+                out = ''
+                return 1
+
+            else:
+                print('getAutocalibrationInfo not defined for dev_type = ', dev_type)
+                return 0
 
     def setRightHandedAxis(self):
         # axes definitions

@@ -18,7 +18,7 @@ http://wiki.ros.org/roslaunch/XML
         
         <!-- launch common nodes -->
         <node name="imu" pkg="yostlabs_3space_imu" type="imu_node.py" output="screen" respawn="true" respawn_delay="5"/>
-        <node name="dashboard" pkg="rqt_gui" type="rqt_gui" output="log" args="--perspective-file $(find yostlabs_3space_imu)/perspective/EMA_IMU.perspective"/>
+        <!-- node name="dashboard" pkg="rqt_gui" type="rqt_gui" output="log" args="-perspective-file $(find yostlabs_3space_imu)/perspective/EMA_IMU.perspective"/ -->
 
     </group>
 </launch>

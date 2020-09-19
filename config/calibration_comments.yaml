@@ -1,0 +1,76 @@
+
+# The YAML is the data used to calibrate all IMU tares to ema_fes_trike application
+#
+# Method: 
+# 1. Disable Magnetometer using 3-Space Suite program (Windows or MAC only)
+# 2. Commit changes to sabe non-volatile flash memory inside each IMU
+# 3. In imu.yaml file change the below settings. Maitain the rest to streaming mode: true and broadcast:false
+autocalibrate: true
+manual_calibration: false
+wireless_id: {pedal: IMU_number} # IMU_number = int (ex: 8) - related to your dongle config for each IMU (use 3-space suite program for changes)
+# 4. run command : roslaunch yostlabs_3space_imu imu.launch 
+# 5. copy last 4 float numbers in tareAsQuartenion message using ctrl+shift+c shortcut
+# Result example: -0.08518,-0.68169,-0.72048,-0.09457 (if magnetometer is on there will be some positive numbers)
+# 6. repeat at least 5 times
+# 7. calculate simple mean and paste on tare_calibration in .yaml. Follow the below format:
+# tare_calibration: {'imu<IMU_NUMBER>': [-0.08303,-0.68177,-0.72074,-0.09250]}
+tare_calibration: {imu1: [-0.08303,-0.68177,-0.72074,-0.09250]} # ex: fixed tare in quartenion for IMU 1
+# For multiple use
+tare_calibration: {imu1: [-0.08303,-0.68177,-0.72074,-0.09250],
+                   imu2: [-0.08303,-0.68177,-0.72074,-0.09250]}
+## IMU 1
+# 1: -0.08518,-0.68169,-0.72048,-0.09457
+# 2: -0.08347,-0.68188,-0.72071,-0.09304
+# 3: -0.08207,-0.68207,-0.72088,-0.09153
+# 4: -0.08357,-0.68197,-0.72061,-0.09305
+# 5: -0.08069,-0.68227,-0.72100,-0.09031
+# media: -0.08303,-0.68177,-0.72074,-0.09250
+
+## IMU 2
+# 1: -0.03411,-0.69621,-0.71589,-0.04033
+# 2: -0.03287,-0.69639,-0.71572,-0.04127
+# 3: -0.03946,-0.69603,-0.71533,-0.04776
+# 4: -0.03892,-0.69606,-0.71536,-0.04738
+# 5: -0.04050,-0.69586,-0.71537,-0.04875
+# media: -0.03717,-0.69611,-0.71553,-0.04518
+
+## IMU 3
+# 1: -0.03907,-0.69710,-0.71503,-0.03548
+# 2: -0.03857,-0.69694,-0.71525,-0.03478
+# 3: -0.03926,-0.69685,-0.71526,-0.03556
+# 4: -0.03932,-0.69684,-0.71527,-0.03548
+# 5: -0.03839,-0.69701,-0.71519,-0.03474
+# media: -0.03892,-0.69695,-0.71520,-0.03521
+
+## IMU 4
+# 1: -0.14925,-0.66838,-0.71086,-0.16022
+# 2: -0.15117,-0.66796,-0.71038,-0.16229
+# 3: -0.15327,-0.66754,-0.70990,-0.16417
+# 4: -0.15381,-0.66730,-0.70985,-0.16483
+# 5: -0.15155,-0.66799,-0.71019,-0.16263
+# media: -0.15181,-0.66783,-0.71024,-0.16283
+
+## IMU 5
+# 1: -0.11952,-0.67835,-0.71349,-0.12842
+# 2: -0.12036,-0.67852,-0.71302,-0.12930
+# 3: -0.12003,-0.67839,-0.71328,-0.12887
+# 4: -0.11953,-0.67846,-0.71339,-0.12840
+# 5: -0.12220,-0.67810,-0.71282,-0.13091
+# media: -0.12033,-0.67836,-0.71320,-0.12918
+
+## IMU 8
+# 1: -0.11462,-0.68091,-0.71303,-0.12171
+# 2: -0.11702,-0.68036,-0.71275,-0.12414
+# 3: -0.11706,-0.68041,-0.71269,-0.12415
+# 4: -0.11670,-0.68060,-0.71266,-0.12360
+# 5: -0.11717,-0.68037,-0.71269,-0.12423
+# media: -0.11651,-0.68053,-0.71276,-0.12357
+
+# Common to all IMUs
+#
+# For future use:  compass and gyro coeffs 
+# Note: can be set using 3-space suite *advanced settings then commit to save in internal
+#
+# compass_coeffs: [1.0000,0.0000,0.0000,0.0000,1.0000,0.0000,0.0000,0.0000,1.0000,0.0000,0.0000,0.0000]
+#
+# gyro_coeffs:  [1.0000,0.0000,0.0000,0.0000,1.0000,0.0000,0.0000,0.0000,1.0000,0.0000,0.0000,0.0000]

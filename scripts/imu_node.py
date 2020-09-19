@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 
@@ -15,17 +15,17 @@ http://wiki.ros.org/Nodes
 """
 
 # # Python 2 and 3 compatibility
-# from __future__ import absolute_import
-# from __future__ import division
-# from __future__ import print_function
-# from builtins import *
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from builtins import *
 
 import rospy
 import modules.imu as imu
 
 # import ros msgs
 from std_msgs.msg import String
-from std_msgs.msg import Int8
+from std_msgs.msg import UInt8
 from std_srvs.srv import Empty
 from sensor_msgs.msg import Imu
 from ema_common_msgs.srv import SetUInt16
@@ -87,7 +87,8 @@ def main():
     pub = {}
     for name in imu_manager.imus:
         pub[name] = rospy.Publisher('imu/' + name, Imu, queue_size=10)
-        # pub[name + '_buttons'] = rospy.Publisher('imu/' + name + '_buttons', Int8, queue_size=10)
+        pub[name + '_battery'] = rospy.Publisher('imu/' + name + '_battery', UInt8, queue_size=10)
+        # pub[name + '_buttons'] = rospy.Publisher('imu/' + name + '_buttons', UInt8, queue_size=10)
 
     # define loop rate (in hz)
     rate = rospy.Rate(200)
@@ -105,7 +106,7 @@ def main():
                 imuMsg = Imu()
                 imuMsg.header.stamp = timestamp
                 imuMsg.header.frame_id = frame_id
-                buttons = Int8()
+                buttons = UInt8()
                 
                 for name in imu_manager.imus:
                     orientation = imu_manager.getQuaternion(name)
@@ -141,15 +142,18 @@ def main():
                         imuMsg.header.stamp = timestamp
                         imuMsg.header.frame_id = frame_id
                         # buttons = Int8()
-                        
+
                         streaming_data = imu_manager.getStreamingData(name)
                         idx = 0
-                        
+
+                        # if streaming_data != None:
+                        # print(streaming_data)
+                    
                         for slot in imu_manager.streaming_slots[name]:
                             #print(name, slot)
                             
                             if slot == 'getTaredOrientationAsQuaternion':
-                      
+                        
                                 imuMsg.orientation.x = streaming_data[idx]
                                 imuMsg.orientation.y = streaming_data[idx+1]
                                 imuMsg.orientation.z = streaming_data[idx+2]
@@ -164,6 +168,12 @@ def main():
                                 imuMsg.angular_velocity.z = streaming_data[idx+2]
                                 
                                 idx = idx + 3
+
+                            elif slot == 'getBatteryPercent':
+                                
+                                battery = streaming_data[idx]
+                                idx = idx + 1
+
                                 
                             elif slot == 'getCorrectedAccelerometerVector':
                                 
@@ -185,6 +195,7 @@ def main():
 
                         # publish streamed data
                         pub[name].publish(imuMsg)
+                        pub[name + '_battery'].publish(battery)
                         # pub[name + '_buttons'].publish(buttons)
 
                 # BROADCAST MODE
@@ -226,7 +237,8 @@ def main():
                         # pub[name + '_buttons'].publish(buttons)
 
         except TypeError:
-            print('TypeError occured!')
+            # print('TypeError occured!')
+            pass
 
         # sleep until it's time to work again
         rate.sleep()
