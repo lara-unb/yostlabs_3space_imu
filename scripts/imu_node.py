@@ -24,6 +24,7 @@ import rospy
 import modules.imu as imu
 
 # import ros msgs
+from std_msgs.msg import Float64
 from std_msgs.msg import String
 from std_msgs.msg import UInt8
 from std_srvs.srv import Empty
@@ -33,6 +34,7 @@ from ema_common_msgs.srv import SetUInt16
 # import utilities
 import yaml
 import rospkg
+import numpy
 
 def kill_node_callback(req):
     """ROS Service handler to shutdown this node.
@@ -87,8 +89,9 @@ def main():
     pub = {}
     for name in imu_manager.imus:
         pub[name] = rospy.Publisher('imu/' + name, Imu, queue_size=10)
-        pub[name + '_battery'] = rospy.Publisher('imu/' + name + '_battery', UInt8, queue_size=10)
-        # pub[name + '_buttons'] = rospy.Publisher('imu/' + name + '_buttons', UInt8, queue_size=10)
+        pub[name + '_batteryVoltage'] = rospy.Publisher('imu/' + name + '_batteryVoltage', Float64, queue_size=10)
+        pub[name + '_batteryPercent'] = rospy.Publisher('imu/' + name + '_batteryPercent', UInt8, queue_size=10)
+        pub[name + '_buttons'] = rospy.Publisher('imu/' + name + '_buttons', UInt8, queue_size=10)
 
     # define loop rate (in hz)
     rate = rospy.Rate(200)
@@ -141,7 +144,10 @@ def main():
                         imuMsg = Imu()
                         imuMsg.header.stamp = timestamp
                         imuMsg.header.frame_id = frame_id
-                        # buttons = Int8()
+                        battery_voltage = Float64()
+                        battery_percent = UInt8()
+                        buttons = UInt8()
+
 
                         streaming_data = imu_manager.getStreamingData(name)
                         idx = 0
@@ -168,12 +174,6 @@ def main():
                                 imuMsg.angular_velocity.z = streaming_data[idx+2]
                                 
                                 idx = idx + 3
-
-                            elif slot == 'getBatteryPercent':
-                                
-                                battery = streaming_data[idx]
-                                idx = idx + 1
-
                                 
                             elif slot == 'getCorrectedAccelerometerVector':
                                 
@@ -182,21 +182,40 @@ def main():
                                 imuMsg.linear_acceleration.z = -streaming_data[idx+2]
                                 
                                 idx = idx + 3
-                                
-                            elif slot == 'getButtonState':
 
-                                if type(streaming_data) == 'tuple':
-                                    buttons = streaming_data[idx]
+                            elif slot == 'getBatteryVoltage':
+
+                                battery_voltage = streaming_data[idx]
+
+                                idx = idx + 1
+                            
+                            elif slot == 'getBatteryPercentRemaining':
+
+                                battery_percent = streaming_data[idx].astype(numpy.uint8)
+
+                                idx = idx + 1
+
+                            elif slot == 'getButtonState':
+                                buttons = streaming_data[idx].astype(numpy.uint8)
                                 
-                                    idx = idx + 1
-                                else:
-                                    # imu is only streaming button state, result is not a tuple
-                                    buttons = streaming_data
+                                idx = idx + 1
+                                
+                                ## Below dont work in the new generalized getStreamingData function
+                                # if type(streaming_data) == 'tuple':
+                                #     buttons = streaming_data[idx].astype(numpy.uint8)
+                                
+                                #     idx = idx + 1
+                                # else:
+                                #     # imu is only streaming button state, result is not a tuple
+                                #     buttons = streaming_data[idx].astype(numpy.uint8)
+
+                                #     idx = idx + 1
 
                         # publish streamed data
                         pub[name].publish(imuMsg)
-                        pub[name + '_battery'].publish(battery)
-                        # pub[name + '_buttons'].publish(buttons)
+                        pub[name + '_batteryVoltage'].publish(battery_voltage)
+                        pub[name + '_batteryPercent'].publish(battery_percent)
+                        pub[name + '_buttons'].publish(buttons)
 
                 # BROADCAST MODE
                 else:
@@ -205,7 +224,7 @@ def main():
                         imuMsg = Imu()
                         imuMsg.header.stamp = timestamp
                         imuMsg.header.frame_id = frame_id
-                        buttons = Int8()
+                        buttons = UInt8()
                         
                         streaming_data = imu_manager.devices[name].getStreamingBatch()
                         
@@ -234,7 +253,7 @@ def main():
 
                         # publish streamed data
                         pub[name].publish(imuMsg)
-                        # pub[name + '_buttons'].publish(buttons)
+                        pub[name + '_buttons'].publish(buttons)
 
         except TypeError:
             # print('TypeError occured!')

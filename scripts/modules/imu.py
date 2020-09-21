@@ -19,6 +19,50 @@ import struct
 import binascii
 
 class IMU(object):
+    # Add more using Yostlabs user manual and legacy lib threespace_api for original names
+    # Method: 'command_name': (command_number, data_lengh in bytes, number of messages (default 1))
+    command_dict = {
+    # Orientation Commands
+    'getTaredOrientationAsQuaternion': (0, 4, 1),
+    'getTaredOrientationAsEulerAngles': (1, 3, 1),
+    'getTaredOrientationAsRotationMatrix': (2, 9, 1),
+    'getTaredOrientationAsAxisAngle': (3, 4, 1),
+    'getTaredOrientationAsTwoVector': (4, 6, 1),
+    'getDifferenceQuaternion': (5, 4, 1),
+    'getUntaredOrientationAsQuaternion': (6, 4, 1),
+    'getUntaredOrientationAsEulerAngles': (7, 3, 1),
+    'getUntaredOrientationAsRotationMatrix': (8, 9, 1),
+    'getUntaredOrientationAsAxisAngle': (9, 4, 1),
+    'getUntaredOrientationAsTwoVector': (10, 6, 1),
+    'getTaredTwoVectorInSensorFrame': (11, 6, 1),
+    'getUntaredTwoVectorInSensorFrame': (12, 6, 1),
+    # Normalized Data Commands
+    'getAllNormalizedComponentSensorData': (32, 9, 1),
+    'getNormalizedGyroRate': (33, 3, 1),
+    'getNormalizedAccelerometerVector': (34, 3, 1),
+    'getNormalizedCompassVector': (35, 3, 1),
+    # Corrected Data Commands
+    'getAllCorrectedComponentSensorData': (37, 9, 1),
+    'getCorrectedGyroRate': (38, 3, 1),
+    'getCorrectedAccelerometerVector': (39, 3, 1),
+    'getCorrectedCompassVector': (40, 3, 1),
+    'getCorrectedLinearAccelerationInGlobalSpace': (41, 3, 1),
+    'getCorrectedRawGyroData': (48, 3, 1),
+    'getCorrectedRawAccelerometerData': (49, 3, 1),
+    'getCorrectedRawCompassData': (50, 3, 1),
+    # Raw Data Commands
+    'getAllRawComponentSensorData': (64, 9, 1),
+    'getRawGyroscopeRate': (65, 3, 1),
+    'getRawAccelerometerData': (66, 3, 1),
+    'getRawCompassData': (67, 3, 1),
+    # Battery Commands
+    'getBatteryVoltage': (201, 1, 1),
+    'getBatteryPercentRemaining': (202, 1, 1),
+    # HID Commands
+    'getButtonState': (250, 1, 1),
+    'null': (255, 0, 0),
+    }
+
     def __init__(self, config_dict):
         self.config_dict = config_dict
         self.broadcast = False
@@ -33,6 +77,8 @@ class IMU(object):
         self.manual_calibration = False
         self.tare_calibration = []
         self.baudrate = 115200 # default baudrate
+        self.slot_number = []
+        self.msgs_number = 0
 
         for name in config_dict['dev_names']:
             dev_type = config_dict['dev_type'][name]
@@ -115,16 +161,33 @@ class IMU(object):
                     print(out)
                     out = ''
 
-                    # Since this file was adapted for a specific application, the field "streaming_slots" from the configuration 
-                    # file (imu.yalm) wont be treated here, but it should if a generalized application is desired
+                    ## Generalized application
 
-                    command1 = 0 # Code for getTaredOrientationAsQuaternion
-                    command2 = 33 # Code for getNormalizedGyroRate
-                    command3 = 202 # Battery Percentage
+                    # Get IMU slots according to config file
+                    padded_slots = list(self.streaming_slots[name])
+                    
+                    # Add null if there is less than 9 commands
+                    for i in range(0,8):
+                        try:
+                            padded_slots[i]
+                        except IndexError:
+                            padded_slots.append('null')
 
-                    # Set streaming slots
-                    msg = '>'+str(wireless_id)+',80,'+str(command1)+\
-                          ','+str(command2)+','+str(command3)+',255,255,255,255,255\n'
+                    # Get each slot number from first dict column
+                    for slot in padded_slots:
+                        cmd_number = self.command_dict[slot][0]
+                        self.slot_number.append(cmd_number)
+
+                    # Get each streamed msg size from third dict column
+                    msgs_number = []
+                    for slot in padded_slots:
+                        cmd_size = self.command_dict[slot][2]
+                        msgs_number.append(cmd_size)
+
+                    # Calculate total msgs in streamed data (used in getStreamData)
+                    self.msgs_number = sum(msgs_number)
+
+                    msg = '>'+str(wireless_id)+',80,'+','.join(map(str,self.slot_number[0:8]))+'\n'
                     print(msg)
                     serial_port.write(msg.encode())
                     time.sleep(0.1)
@@ -143,10 +206,10 @@ class IMU(object):
                         temp_msg = serial_port.read(serial_port.inWaiting())
                         out = '>> ' + temp_msg.decode()
                     print('Start')
-                    
-                    # # Start streaming
-                    # # G: for some reason, startStreaming was a bad idea. without it, we get to 67Hz
-                    # #self.devices[name].startStreaming()
+
+                    # Start streaming
+                    # G: for some reason, startStreaming was a bad idea. without it, we get to 67Hz
+                    # self.devices[name].startStreaming()
             
             # else:
             #     self.broadcast = True
@@ -384,65 +447,41 @@ class IMU(object):
         dev_type = self.config_dict['dev_type'][name]
         wireless_id = self.config_dict['wireless_id'][name] # Logical id of WL device in associated dongle's wireless table
         serial_port = self.serialport # Serial port of the respective dongle
+        total_msgs = self.msgs_number # Total msgs in streaming data
 
         if dev_type == 'WL':
             # The sensor might send more than one message at once so this piece of code is gonna handle that
             out = serial_port.inWaiting()
             if out > 0:
+
+                # Generalized application:
                 data = serial_port.read(out)
-                # print("DATA_RAW: ", data)
 
                 # Decode to string and replace newline with space
                 data = data.decode().replace('\r\n',' ')
-                # print("DATA_DECODED: ", data)
 
                 # Create a list of strings separating each message if that's the case
                 data = data.split(' ')
                 data = list(filter(None, data))
-                # print("DATA_FILTERED: ", data)
+
+                # Create temporary data_msg and fill with zeros
+                data_msg = [0] * total_msgs
+
+                # Ignore 3 first bytes in latest message
+                data_msg[0] = data[-total_msgs][3:]
+
+                # Get the rest userful messages
+                data_msg[1:total_msgs] = data[-total_msgs+1:]
+
+                # Unify all messages in one
+                data_msg = ','.join(data_msg)
+
+                # Split individual values
+                data_msg = data_msg.split(',')
                 
-                # Get the 2 latest messages and ignore others
-                temp = data[-3] # Quartenios msg
-                temp2 = data[-2] # Gyroscope msg
-                temp3 = data[-1] # Battery level
-
-                # Remove undesired first 3 bytes
-                temp = temp[3:]  # only on quart
-                # print("QUART_MSG: ", temp)
-                # print("GYRO_MSG: ", temp2)
+                # Convert data to float64
+                out = numpy.array(data_msg, dtype=numpy.float64)
                 
-                temp = temp.split(',')
-                temp2 = temp2.split(',')
-                # print("QUART_MSG_SPLITTED: ", temp)
-                # print("GYRO_MSG_SPLITTED: ", temp2)
-                # print("BATTERY_MSG: ", temp3)
-
-                # Convert to float
-                temp = numpy.array(temp).astype(numpy.float)
-                temp2 = numpy.array(temp2).astype(numpy.float)
-                temp3 = numpy.array(temp3).astype(numpy.uint8)
-                # print('QUART_MSG_CONVERTED:', temp)
-                # print('GYRO_MSG_CONVERTED:', temp2)
-                # print("BATTERY_MSG_CONVERTED: ", temp3)
-                # Quartenions
-                x = temp[0]
-                y = temp[1]
-                z = temp[2]
-                w = temp[3]
-                # qt_msg = [x, y, z, w]
-                # print('QUART_PUB_MSG: ', qt_msg)
-
-                # Gyroscope
-                v1 = temp2[0]
-                v2 = temp2[1]
-                v3 = temp2[2]
-                # v_msg = [v1, v2, v3]
-                # print('GYRO_PUB_MSG: ', v_msg)
-
-                # Battery
-                b = temp3
-
-                out = [x,y,z,w,v1,v2,v3,b]
                 # out = 0
                 return out
             else:

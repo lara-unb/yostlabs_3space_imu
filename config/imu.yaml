@@ -16,7 +16,7 @@ streaming: true
 streaming_interval: 0
 streaming_duration: unlimited
 streaming_delay: 0
-streaming_slots: {pedal: [getTaredOrientationAsQuaternion, getNormalizedGyroRate, getBatteryPercent]}
+streaming_slots: {pedal: [getTaredOrientationAsQuaternion, getNormalizedGyroRate, getBatteryVoltage, getBatteryPercentRemaining]}
 wired_port: {pc: /dev/ttyACM0}
 wireless_dng: {pedal: pc}
-wireless_id: {pedal: 8}
+wireless_id: {pedal: 1}
