@@ -14,7 +14,7 @@ http://wiki.ros.org/Nodes
 
 """
 
-# # Python 2 and 3 compatibility
+# Python 2 and 3 compatibility
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -73,12 +73,16 @@ def set_imu_number_callback(req):
             return {'success':True, 'message':msg}
     return {'success':False, 'message':msg}
 
+
 def main():
     # init imu node
     rospy.init_node('imu', anonymous=False)
 
     # get imu config
     imu_manager = imu.IMU(rospy.get_param('imu'))
+
+    # prepare function to be executed when shutting down
+    rospy.on_shutdown(imu_manager.shutdown)
 
     # list provided services
     services = {}
@@ -261,9 +265,7 @@ def main():
 
         # sleep until it's time to work again
         rate.sleep()
-        
-    # cleanup
-    imu_manager.shutdown()
+
 
 if __name__ == '__main__':
     try:
