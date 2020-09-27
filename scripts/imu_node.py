@@ -40,7 +40,6 @@ from ema_common_msgs.srv import SetUInt16
 # Import utilities
 import yaml
 import rospkg
-import numpy
 
 def kill_node_callback(req):
     """ROS Service handler to shutdown this node.
@@ -195,11 +194,11 @@ def main():
                                 idx = idx+1
 
                             elif slot == 'getBatteryPercentRemaining':
-                                battery_percent = streaming_data[idx].astype(numpy.uint8)
+                                battery_percent = streaming_data[idx]
                                 idx = idx+1
 
                             elif slot == 'getButtonState':
-                                buttons = streaming_data[idx].astype(numpy.uint8)
+                                buttons = streaming_data[idx]
                                 idx = idx+1
 
                         # Publish streamed data
@@ -244,7 +243,6 @@ def main():
                         pub[name+'_buttons'].publish(buttons)
 
         except TypeError:
-            # print('TypeError occured!')
             pass
 
         # Wait for next loop

@@ -13,10 +13,8 @@ filtered sensor measurement as a ROS message to other ROS nodes.
 """
 
 import time
-import numpy
 import serial
 import struct
-import binascii
 
 class IMU(object):
     # Add more using Yostlabs user manual and legacy lib threespace_api for original names
@@ -448,45 +446,49 @@ class IMU(object):
         wireless_id = self.config_dict['wireless_id'][name] # Logical id of WL device in associated dongle's wireless table
         serial_port = self.serialport # Serial port of the respective dongle
         total_msgs = self.msgs_number # Total msgs in streaming data
-
+        # Number of values to return according to all slots
+        count_values = sum(self.command_dict[slot][1] for slot in self.streaming_slots[name])
         if dev_type == 'WL':
-            # The sensor might send more than one message at once so this piece of code is gonna handle that
-            out = serial_port.inWaiting()
-            if out > 0:
-
-                # Generalized application:
-                data = serial_port.read(out)
-
-                # Decode to string and replace newline with space
-                data = data.decode().replace('\r\n',' ')
-
-                # Create a list of strings separating each message if that's the case
-                data = data.split(' ')
-                data = list(filter(None, data))
-
-                # Create temporary data_msg and fill with zeros
-                data_msg = [0] * total_msgs
-
-                # Ignore 3 first bytes in latest message
-                data_msg[0] = data[-total_msgs][3:]
-
-                # Get the rest userful messages
-                data_msg[1:total_msgs] = data[-total_msgs+1:]
-
-                # Unify all messages in one
-                data_msg = ','.join(data_msg)
-
-                # Split individual values
-                data_msg = data_msg.split(',')
-                
-                # Convert data to float64
-                out = numpy.array(data_msg, dtype=numpy.float64)
-                
-                # out = 0
-                return out
-            else:
-                return None
-
+            bytes_waiting = serial_port.inWaiting()
+            # There is a new msg of bytes_waiting size
+            if bytes_waiting > 0:
+                data_buffer = serial_port.read(bytes_waiting)  # Get the msg as bytes
+                data_buffer = data_buffer.decode()  # Unicode string
+                # print('\n\n\nStreaming Data Raw:\n'+data_buffer)
+                # Get at least one batch in case the sensor sends more than one
+                while data_buffer:
+                    try:
+                        # Parse the 3 byte header
+                        fail_byte, logical_id, msg_len = (ord(x) for x in data_buffer[0:3])
+                        if fail_byte:  # Communication failure
+                            print('Error: non zero fail byte')
+                            return 0
+                        data_buffer = data_buffer[3:]
+                        # Check if the msg is from the requested sensor
+                        if logical_id == wireless_id:
+                            mixed_data = data_buffer[:msg_len]
+                            # Convert the str msg into list and cleanup
+                            data_list = [x for x in mixed_data.split('\r\n') if x != '']
+                            # print('Valid Data List:\n'+str(data_list))
+                            data = []
+                            for measurement in data_list:
+                                # Convert to numeric values
+                                try:  # Try int first
+                                    values = [int(x) for x in measurement.split(',')]
+                                    data += values
+                                    continue
+                                # If necessary try float after
+                                except (TypeError, ValueError):
+                                    pass
+                                values = [float(x) for x in measurement.split(',')]
+                                data += values
+                            # print('\nData Final:\n'+str(data))
+                            return data
+                        data_buffer = data_buffer[msg_len:]  # Try next batch
+                    except (IndexError, TypeError, ValueError) as e:
+                        print(e)
+                        break
+            return 0
         else:
             print('getStreamingBatch not defined for dev_type = ', dev_type)
             return 0
