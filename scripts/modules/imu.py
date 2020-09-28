@@ -75,8 +75,8 @@ class IMU(object):
         self.manual_calibration = False
         self.tare_calibration = []
         self.baudrate = 115200 # default baudrate
-        self.slot_number = []
-        self.msgs_number = 0
+        self.slot_number = {}
+        self.msgs_number = {}
 
         for name in config_dict['dev_names']:
             dev_type = config_dict['dev_type'][name]
@@ -172,20 +172,15 @@ class IMU(object):
                             padded_slots.append('null')
 
                     # Get each slot number from first dict column
+                    self.slot_number[name] = []
                     for slot in padded_slots:
                         cmd_number = self.command_dict[slot][0]
-                        self.slot_number.append(cmd_number)
-
-                    # Get each streamed msg size from third dict column
-                    msgs_number = []
-                    for slot in padded_slots:
-                        cmd_size = self.command_dict[slot][2]
-                        msgs_number.append(cmd_size)
+                        self.slot_number[name].append(cmd_number)
 
                     # Calculate total msgs in streamed data (used in getStreamData)
-                    self.msgs_number = sum(msgs_number)
+                    self.msgs_number[name] = sum(self.command_dict[slot][1] for slot in padded_slots)
 
-                    msg = '>'+str(wireless_id)+',80,'+','.join(map(str,self.slot_number[0:8]))+'\n'
+                    msg = '>'+str(wireless_id)+',80,'+','.join(map(str,self.slot_number[name][0:8]))+'\n'
                     print(msg)
                     serial_port.write(msg.encode())
                     time.sleep(0.1)
@@ -445,9 +440,7 @@ class IMU(object):
         dev_type = self.config_dict['dev_type'][name]
         wireless_id = self.config_dict['wireless_id'][name] # Logical id of WL device in associated dongle's wireless table
         serial_port = self.serialport # Serial port of the respective dongle
-        total_msgs = self.msgs_number # Total msgs in streaming data
-        # Number of values to return according to all slots
-        count_values = sum(self.command_dict[slot][1] for slot in self.streaming_slots[name])
+        total_msgs = self.msgs_number[name] # Total msgs in streaming data
         if dev_type == 'WL':
             bytes_waiting = serial_port.inWaiting()
             # There is a new msg of bytes_waiting size
@@ -483,7 +476,7 @@ class IMU(object):
                                 values = [float(x) for x in measurement.split(',')]
                                 data += values
                             # print('\nData Final:\n'+str(data))
-                            return data
+                            return data if len(data) == total_msgs else 0
                         data_buffer = data_buffer[msg_len:]  # Try next batch
                     except (IndexError, TypeError, ValueError) as e:
                         print(e)
