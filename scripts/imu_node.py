@@ -41,16 +41,6 @@ from ema_common_msgs.srv import SetUInt16
 import yaml
 import rospkg
 
-def kill_node_callback(req):
-    """ROS Service handler to shutdown this node.
-
-    Attributes:
-        req (Empty): empty input
-    """
-    # Shutdown this node and rely on roslaunch respawn to restart
-    rospy.loginfo('Node shutdown: service request')
-    rospy.Timer(rospy.Duration(1), rospy.signal_shutdown, oneshot=True)
-    return {}
 
 def set_imu_number_callback(req):
     """ROS Service handler to set a different IMU number.
@@ -94,8 +84,6 @@ def main():
     # List provided services
     rospy.loginfo('Setting up services')
     services = {}
-    services['kill_node'] = rospy.Service('imu/kill_node',
-        Empty, kill_node_callback)
     services['set_imu_number'] = rospy.Service('imu/set_imu_number',
         SetUInt16, set_imu_number_callback)
 
